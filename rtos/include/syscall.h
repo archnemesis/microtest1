@@ -35,19 +35,19 @@
 #define INCLUDE_SYSCALL_H_
 
 #include <micrortos.h>
+#include <thread.h>
+#include <private/thread_p.h>
 
 typedef void (*syscall_handler)(uint32_t *args);
 
 #define syscall(code) asm volatile("SVC %[immediate]"::[immediate] "I" (code))
 
-void sys_scheduler_start(uint32_t *args);
-void sys_thread_create(uint32_t *args);
-void sys_thread_terminate(uint32_t *args);
-
 syscall_handler syscall_table[] = {
-		&sys_scheduler_start,
-		&sys_thread_create,
-		&sys_thread_terminate
+		&thread_start_scheduler_syscall_handler,
+		&thread_create_syscall_handler,
+		&thread_destroy_syscall_handler,
+		&thread_sleep_syscall_handler,
+		&thread_yield_syscall_handler
 };
 
 #endif /* INCLUDE_SYSCALL_H_ */

@@ -59,42 +59,74 @@ int mutex_lock_blocking(struct mutex_t *mutex, unsigned long timeout)
 
 int mutex_lock_wait(struct mutex_t *mutex, uint32_t timeout)
 {
-	int r = 0;
-
-	while (!mutex_lock_nonblocking(mutex)) {
-		thread_wait_on_mutex(mutex, timeout);
-	}
-
-	return E_OK;
-}
-
-int mutex_lock_wait_syscall_handler(uint32_t *args)
-{
-	struct mutex_t *mutex = (struct mutex_t *)args[0];
-	uint32_t timeout = args[1];
-
 	//
 	// try a quick lock to save time
 	//
-	while (!mutex_lock_nonblocking(mutex)) {
+	if (mutex_lock_nonblocking(mutex) != E_OK) {
 		//
-		// set this thread to waiting
+		// the mutex is locked, so we make a syscall to put the thread
+		// into waiting for mutex state
 		//
-		if (active_thread) {
-			active_thread->wait_condition = WAIT_MUTEX;
-			active_thread->mutex_waiting = mutex;
-			active_thread->mutex_timeout = timeout;
-		}
-
-		//
-		// trigger a context switch
-		//
-		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+		return thread_wait_mutex(mutex, timeout);
 	}
 
+	mutex->holder = thread_get_current();
 
 	//
 	// at this point the mutex was locked
 	//
 	return E_OK;
 }
+
+#pragma GCC diagnostic ignored "-Wreturn-type"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+__attribute__ ((noinline))
+int mutex_unlock(struct mutex_t *mutex)
+{
+		syscall(SYSCALL_THREAD_UNLOCK_MUTEX);
+}
+
+int mutex_unlock_syscall_handler(uint32_t *args)
+{
+	struct mutex_t *mutex = (struct mutex_t *)args[0];
+
+	mutex->locked = 0;
+
+	if (active_thread != NULL) {
+		//
+		// cycle thread list and unlock highest priority thread
+		// waiting on this mutex
+		//
+		struct thread_list_t *ptr = &thread_list;
+		struct thread_t *next_thread = NULL;
+
+		while (ptr->next != NULL) {
+			if (ptr->thread->state == STATE_WAITING && ptr->thread->wait_condition == WAIT_MUTEX) {
+				if (ptr->thread->mutex_waiting == mutex) {
+					if (next_thread == NULL || ptr->thread->attr.priority > next_thread->attr.priority) {
+						next_thread = ptr->thread;
+					}
+				}
+			}
+			ptr = ptr->next;
+		}
+
+		//
+		// we found a thread waiting with a higher priority, so we trigger a context
+		// switch to let it go
+		//
+		if (next_thread != NULL && next_thread->attr.priority > active_thread->attr.priority) {
+			next_thread->state = STATE_READY;
+			next_thread->wait_condition = WAIT_NONE;
+			next_thread->mutex_waiting = NULL;
+			next_thread->mutex_counter = 0;
+			next_thread->mutex_timeout = 0;
+			next_thread->mutex_priority = 0;
+
+			if (thread_tick()) {
+				SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+			}
+		}
+	}
+
+	return E_OK;

@@ -63,16 +63,19 @@ struct thread_def_t {
 };
 
 struct thread_t {
-	uint32_t 					*stack_ptr;
-	enum thread_state 			state;
-	enum thread_wait_condition	wait_condition;
-	struct thread_def_t			attr;
-	uint32_t 					sleep_counter;
-	uint32_t 					sleep_duration;
-	uint64_t 					stack[1024];
-	struct mutex_t				*mutex_waiting;
-	uint32_t					mutex_timeout;
-	uint32_t					mutex_counter;
+	volatile uint32_t											*stack_ptr;
+	volatile enum thread_state						state;
+	volatile enum thread_wait_condition		wait_condition;
+	volatile uint32_t											running_priority;
+	struct thread_def_t										attr;
+	uint32_t															sleep_counter;
+	uint32_t															sleep_duration;
+	uint64_t															stack[1024];
+	volatile struct mutex_t								*mutex_waiting;
+	volatile uint64_t											mutex_timeout;
+	volatile uint64_t											mutex_counter;
+	volatile uint32_t											mutex_priority;
+	volatile uint8_t											mutex_timed_out;
 };
 
 struct thread_handle_t {
@@ -143,11 +146,11 @@ void thread_exit(void);
 /**
  * Wait for a mutex to become available.
  */
-void thread_wait_for_mutex(struct mutex_t *mutex, uint32_t timeout);
+void thread_wait_mutex(struct mutex_t *mutex, uint32_t timeout);
 
 /**
  * Get handle for a thread.
  */
-int thread_get_current(struct thread_handle_t *handle);
+struct thread_t *thread_get_current();
 
 #endif /* INCLUDE_THREAD_H_ */

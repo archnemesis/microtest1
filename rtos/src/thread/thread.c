@@ -77,6 +77,11 @@ void thread_switch_context()
 	queued_thread = NULL;
 }
 
+struct thread_t *thread_get_current()
+{
+	return active_thread;
+}
+
 uint32_t thread_tick()
 {
 	struct thread_list_t *ptr = thread_list;
@@ -94,8 +99,8 @@ uint32_t thread_tick()
 	do {
 		switch (ptr->thread->state) {
 		case STATE_READY:
-			if (ptr->priority > highest_priority) {
-				highest_priority = ptr->priority;
+			if (ptr->thread->running_priority > highest_priority) {
+				highest_priority = ptr->thread->running_priority;
 				top = ptr;
 			}
 
@@ -107,8 +112,8 @@ uint32_t thread_tick()
 				ptr->thread->sleep_counter = 0;
 				ptr->thread->sleep_duration = 0;
 
-				if (ptr->priority > highest_priority) {
-					highest_priority = ptr->priority;
+				if (ptr->thread->running_priority > highest_priority) {
+					highest_priority = ptr->thread->running_priority;
 					top = ptr;
 				}
 			}
@@ -117,26 +122,45 @@ uint32_t thread_tick()
 		case STATE_WAITING:
 			switch (ptr->thread->wait_condition) {
 			case WAIT_MUTEX:
-				if (OS_SemaphoreTakeNonBlocking(ptr->tcb->semaphore_waiting_to_be_taken)) {
+				//
+				// mutex timed out, set a flag indicating this so when it
+				// wakes it can check
+				//
+				if ((HAL_GetTick() - ptr->thread->mutex_counter) >= ptr->thread->mutex_timeout) {
 					ptr->thread->state = STATE_READY;
-					//ptr->thread->semaphore_waiting_to_be_taken = 0;
+					ptr->thread->wait_condition = WAIT_NONE;
+					ptr->thread->mutex_timed_out = 1;
+					ptr->thread->mutex_waiting = NULL;
+					ptr->thread->mutex_counter = 0;
+					ptr->thread->mutex_timeout = 0;
+					ptr->thread->mutex_priority = 0;
 
-					if (ptr->priority > highest_priority) {
-						highest_priority = ptr->priority;
+					if (ptr->thread->running_priority > highest_priority) {
+						highest_priority = ptr->thread->running_priority;
 						top = ptr;
 					}
 				}
-				breka;
+				break;
 			}
 
 			break;
 		}
 
-		ptr->priority++;
+		ptr->thread->running_priority++;
 		ptr = ptr->next;
 	} while (ptr);
 
-	top->priority = top->thread->attr.priority;
+	//
+	// if this thread's priority was raised by a mutex held, we
+	// want to remain at that priority until the mutex is released
+	// and priority is reset to the running value
+	//
+	if (ptr->thread->mutex_priority > 0) {
+		top->thread->running_priority = ptr->thread->mutex_priority;
+	}
+	else {
+		top->thread->running_priority = top->thread->attr.priority;
+	}
 
 	if (top->thread != active_thread) {
 		queued_thread = top->thread;
@@ -260,9 +284,15 @@ void thread_sleep_syscall_handler(time_t time)
 	active_thread->sleep_duration = time;
 	active_thread->sleep_counter = 0;
 
-	if (thread_tick()) {
-		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
-	}
+	thread_yield_syscall_handler();
+}
+
+#pragma GCC diagnostic ignored "-Wreturn-type"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+__attribute__ ((noinline))
+void thread_yield()
+{
+	syscall(SYSCALL_THREAD_SLEEP);
 }
 
 void thread_yield_syscall_handler()
@@ -272,10 +302,60 @@ void thread_yield_syscall_handler()
 	}
 }
 
-void thread_wait_for_mutex(struct mutex_t *mutex, uint32_t timeout)
+#pragma GCC diagnostic ignored "-Wreturn-type"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+__attribute__ ((noinline))
+uint32_t thread_wait_mutex(struct mutex_t *mutex, uint32_t timeout)
 {
-	active_thread->wait_condition = WAIT_MUTEX;
-	active_thread->mutex_waiting = mutex;
-	active_thread->mutex_timeout = timeout;
-	thread_yield();
+	syscall(SYSCALL_THREAD_WAIT_MUTEX);
+}
+
+uint32_t thread_wait_mutex_syscall_handler(uint32_t *args)
+{
+	struct mutex_t *mutex = (struct mutex_t *)args[0];
+	unsigned long timeout = args[1];
+
+	//
+	// if threading is enabled we set this thread to waiting state
+	//
+	if (active_thread) {
+		//
+		// if the mutex_timed_out flag is 1, that means we timed out trying
+		// to lock the mutex, so we exit unable to lock
+		//
+		if (active_thread->mutex_timed_out == 1) {
+			active_thread->mutex_timed_out = 0;
+			return E_LOCKED;
+		}
+
+		active_thread->wait_condition = WAIT_MUTEX;
+		active_thread->mutex_waiting = mutex;
+		active_thread->mutex_timeout = timeout;
+		active_thread->mutex_counter = HAL_GetTick();
+		active_thread->mutex_timed_out = 0;
+
+		//
+		// if a lower-priority task is holding the mutex, we raise that
+		// thread's priority so it finishes with the mutex, allowing this
+		// task to complete faster. in the forced context switch below,
+		// it should come up next
+		//
+		struct thread_t *holder = mutex->holder;
+		if (holder != NULL && active_thread->attr.priority > holder->attr.priority) {
+			// this check makes sure that another higher-priority task hasn't
+			// already done this exact thing
+			if (active_thread->attr.priority > holder->mutex_priority) {
+				holder->mutex_priority = active_thread->attr.priority;
+			}
+		}
+
+		//
+		// trigger a context switch
+		// this should always happen because this thread is now suspended
+		// and the next should run
+		//
+		thread_yield_syscall_handler();
+	}
+
+	return E_OK;
 }
