@@ -38,14 +38,14 @@
 #include <thread.h>
 #include <private/thread_p.h>
 
-typedef void (*syscall_handler)(uint32_t *args);
+typedef void (*syscall_callback)(uint32_t *args);
 
 #define syscall(code) asm volatile("SVC %[immediate]"::[immediate] "I" (code))
 
-syscall_handler syscall_table[] = {
+syscall_callback syscall_table[] = {
 		&thread_start_scheduler_syscall_handler,
-		&thread_create_syscall_handler,
-		&thread_destroy_syscall_handler,
+		&thread_start_syscall_handler,
+		&thread_terminate_syscall_handler,
 		&thread_sleep_syscall_handler,
 		&thread_yield_syscall_handler
 };

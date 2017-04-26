@@ -34,6 +34,7 @@
 #ifndef INCLUDE_RINGBUFFER_H_
 #define INCLUDE_RINGBUFFER_H_
 
+#include <stdlib.h>
 #include <stdbool.h>
 #include <mutex.h>
 
@@ -78,20 +79,39 @@ bool ringbuffer_full(struct ringbuffer_t *rb);
 /**
  * Returns the number of elements available.
  */
-int ringbuffer_available(struct ringbuffer_t *rb);
+unsigned int ringbuffer_available(struct ringbuffer_t *rb);
 
 /**
  * Get up to size bytes from the buffer and copy to dest.
  *
  * @return int bytes returned
  */
-int ringbuffer_get(struct ringbuffer_t *rb, uint8_t *dest, size_t size);
+unsigned int ringbuffer_get(struct ringbuffer_t *rb, uint8_t *dest, size_t size);
+
+/**
+ * Get up to size bytes from the buffer and copy to dest. This should
+ * only be used in an ISR. Multiple ISRs may write to the same buffer,however
+ * their priorities should be the same to prevent them interrupting each other
+ * during writes.
+ *
+ * @return bytes returned
+ */
+unsigned int ringbuffer_get_from_isr(struct ringbuffer_t *rb, uint8_t *dest, size_t size);
 
 /**
  * Put size bytes from in to buffer.
  *
  * @return int bytes written
  */
-int ringbuffer_put(struct ringbuffer_t *rb, uint8_t *in, size_t size);
+unsigned int ringbuffer_put(struct ringbuffer_t *rb, uint8_t *in, size_t size);
+
+/**
+ * Put size bytes from in to buffer. This should only be used in an ISR.
+ * Multiple ISRs may write to the same buffer, however their priorities
+ * should be the same to prevent them interrupting each other during writes.
+ *
+ * @return int bytes written
+ */
+unsigned int ringbuffer_put_from_isr(struct ringbuffer_t *rb, uint8_t *in, size_t size);
 
 #endif /* INCLUDE_RINGBUFFER_H_ */

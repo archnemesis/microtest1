@@ -63,19 +63,18 @@ struct thread_def_t {
 };
 
 struct thread_t {
-	volatile uint32_t											*stack_ptr;
-	volatile enum thread_state						state;
-	volatile enum thread_wait_condition		wait_condition;
-	volatile uint32_t											running_priority;
-	struct thread_def_t										attr;
-	uint32_t															sleep_counter;
-	uint32_t															sleep_duration;
-	uint64_t															stack[1024];
-	volatile struct mutex_t								*mutex_waiting;
-	volatile uint64_t											mutex_timeout;
-	volatile uint64_t											mutex_counter;
-	volatile uint32_t											mutex_priority;
-	volatile uint8_t											mutex_timed_out;
+	volatile uint32_t *stack_ptr;
+	volatile enum thread_state state;
+	volatile enum thread_wait_condition wait_condition;
+	volatile uint32_t running_priority;
+	struct thread_def_t attr;
+	uint32_t sleep_counter;
+	uint32_t sleep_duration;
+	uint32_t stack[1024];
+	volatile struct mutex_t *mutex_waiting;
+	volatile uint32_t mutex_timeout;
+	volatile uint32_t mutex_counter;
+	volatile uint32_t mutex_priority;
 };
 
 struct thread_handle_t {
@@ -94,15 +93,13 @@ struct thread_list_t {
  */
 
 /**
- * Create a new entry in the thread list for the given thread_attr_t
- * and start the thread.
+ * Create a new entry in the thread list for the given thread_attr_t.
  *
  * @param handle the new thread pointer will be stored here
  * @param attr the new thread will use these attributes
  * @param data pointer to thread data passed as first argument
  * @return integer error code
  */
-__attribute__ ((noinline))
 int thread_create(struct thread_handle_t *handle, struct thread_def_t *attr, void *data);
 
 /**
@@ -114,15 +111,27 @@ int thread_create(struct thread_handle_t *handle, struct thread_def_t *attr, voi
 int thread_destroy(struct thread_handle_t *handle);
 
 /**
+ * Add a thread to the global thread queue and run it.
+ *
+ * @param handle
+ * @return integer error code
+ */
+__attribute__ ((noinline))
+int thread_start(struct thread_handle_t *handle);
+
+/**
+ * Remove a thread from the global thread queue.
+ *
+ * @param handle
+ * @return integer error code
+ */
+__attribute__ ((noinline))
+int thread_terminate(struct thread_handle_t *handle);
+
+/**
  * Wait for a thread to finish.
  */
-int thread_join(struct thread_handle_t *handle, uint32_t timeout);
-
-int thread_def_setname(struct thread_def_t *def, char *name);
-int thread_def_getname(struct thread_def_t *def, char *buffer);
-int thread_def_setpriority(struct thread_def_t *def, uint32_t priority);
-int thread_def_getpriority(struct thread_def_t *def, uint32_t *priority);
-int thread_def_setmain(struct thread_def_t *def, void (*main)(void *));
+//int thread_join(struct thread_handle_t *handle, uint32_t timeout);
 
 /**
  * These functions are called from within threads.
@@ -131,22 +140,32 @@ int thread_def_setmain(struct thread_def_t *def, void (*main)(void *));
 /**
  * Put the current thread to sleep for msecs milliseconds.
  */
-void thread_sleep(time_t time);
+__attribute__ ((noinline))
+void thread_sleep(unsigned long time);
 
 /**
  * Trigger an early context switch.
  */
+__attribute__ ((noinline))
 void thread_yield(void);
 
 /**
  * Exit a thread, removing it from the thread list.
  */
+__attribute__ ((noinline))
 void thread_exit(void);
 
 /**
  * Wait for a mutex to become available.
  */
-void thread_wait_mutex(struct mutex_t *mutex, uint32_t timeout);
+__attribute__ ((noinline))
+int thread_wait_mutex(struct mutex_t *mutex, unsigned long timeout);
+
+/**
+ * Release a mutex and trigger higher priority waiting tasks.
+ */
+__attribute__ ((noinline))
+int thread_release_mutex(struct mutex_t *mutex);
 
 /**
  * Get handle for a thread.

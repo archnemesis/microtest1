@@ -34,6 +34,9 @@
 #ifndef INCLUDE_HEAP_H_
 #define INCLUDE_HEAP_H_
 
+#include <stdlib.h>
+#include <stdio.h>
+
 void *heap_malloc(size_t size);
 void heap_free(void *ptr);
 

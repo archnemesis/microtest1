@@ -53,7 +53,7 @@ void syscall_handler(uint32_t *svc_args)
 	if (svc_id == 0) {
 		// special case to start scheduler
 		// modify svc_exc_return to be the stack pointer
-		uint32_t *stack_pointer = thread_start_scheduler();
+		uint32_t *stack_pointer = (uint32_t *)thread_start_scheduler();
 
 		if (stack_pointer != NULL) {
 			svc_exc_return = HW32_REG((stack_pointer));
@@ -71,8 +71,8 @@ void syscall_handler(uint32_t *svc_args)
 			svc_args[0] = -1;
 		}
 		else {
-			syscall_handler handler = syscall_table[svc_id];
-			svc_args[0] = handler(svc_args);
+			syscall_callback handler = syscall_table[svc_id];
+			handler(svc_args);
 		}
 	}
 }

@@ -8,7 +8,7 @@ _current_thread:
 	.word current_thread
 
 .global PendSV_Handler
-.type PendSV_Handler, %function
+    .type PendSV_Handler, %function
 PendSV_Handler:
 	MRS 		R0, PSP				// Save PSP to R0
 	ISB								// Instruction Sync Barrier

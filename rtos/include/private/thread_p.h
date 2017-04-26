@@ -41,11 +41,13 @@ extern struct thread_list_t thread_list;
 extern struct thread_t *active_thread;
 
 __attribute__ ((noinline))
-uint32_t thread_start_scheduler();
+int thread_start_scheduler();
 uint32_t thread_tick();
-uint32_t *thread_start_scheduler_syscall_handler();
-void thread_sleep_syscall_handler(time_t time);
-void thread_yield_syscall_handler();
+void thread_start_scheduler_syscall_handler(uint32_t *args);
+void thread_start_syscall_handler(uint32_t *args);
+void thread_terminate_syscall_handler(uint32_t *args);
+void thread_sleep_syscall_handler(uint32_t *args);
+void thread_yield_syscall_handler(uint32_t *args);
 void thread_switch_context();
 
 #endif /* INCLUDE_PRIVATE_THREAD_P_H_ */

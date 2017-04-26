@@ -38,10 +38,11 @@
 
 struct mutex_t {
 	uint8_t locked;
-	struct thread_handle_t holder;
+	struct thread_t *holder;
 };
 
 void mutex_init(struct mutex_t *mutex);
+void __mutex_unlock(struct mutex_t *mutex);
 void mutex_lock(struct mutex_t *mutex);
 int mutex_lock_nonblocking(struct mutex_t *mutex);
 void mutex_unlock(struct mutex_t *mutex);

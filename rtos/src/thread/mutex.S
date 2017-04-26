@@ -7,29 +7,14 @@
 _current_thread:
 	.word current_thread
 
-.global mutex_unlock
-	.type mutex_unlock, %function
-mutex_unlock:
+.global __mutex_unlock
+	.type __mutex_unlock, %function
+__mutex_unlock:
 1:	LDREX	R1, [R0]
 	MOV		R1, #0
 	STREX	R2, R1, [R0]
 	CMP		R2, #0
 	BNE		1b
-	BX		LR
-
-.global mutex_lock
-	.type mutex_lock, %function
-mutex_lock:
-1:	LDREX	R1, [R0]	// load lock flag value
-	CMP		R1, #1		// is mutex locked?
-	IT		EQ
-	BEQ		1b			// locked, try again
-	MOV		R1, #1		// set flag to 1
-	STREX	R2, R1, [R0]// store exclusive
-	CMP		R2, #1		// test for interruption
-	IT		EQ
-	BEQ		1b			// try again if interrupted
-	MOV		R0, #E_OK
 	BX		LR
 
 .global mutex_lock_nonblocking

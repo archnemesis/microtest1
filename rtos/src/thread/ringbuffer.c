@@ -73,7 +73,7 @@ bool ringbuffer_full(struct ringbuffer_t *rb)
 	return false;
 }
 
-int ringbuffer_available(struct ringbuffer_t *rb)
+unsigned int ringbuffer_available(struct ringbuffer_t *rb)
 {
 	if (rb->head < rb->tail) {
 		return (rb->head + (rb->elements + 1)) - rb->tail;
@@ -83,12 +83,18 @@ int ringbuffer_available(struct ringbuffer_t *rb)
 	}
 }
 
-int ringbuffer_get(struct ringbuffer_t *rb, uint8_t *dest, size_t size)
+unsigned int ringbuffer_get(struct ringbuffer_t *rb, uint8_t *dest, size_t size)
 {
 	mutex_lock(&rb->tail_lock);
+	int read = ringbuffer_get_from_isr(rb, dest, size);
+	mutex_unlock(&rb->tail_lock);
+	return read;
+}
 
-	int i = 0;
-	int available = ringbuffer_available(rb);
+unsigned int ringbuffer_get_from_isr(struct ringbuffer_t *rb, uint8_t *dest, size_t size)
+{
+	unsigned int i = 0;
+	unsigned int available = ringbuffer_available(rb);
 
 	if (available > 0) {
 		for (; i < available && i < size; i++) {
@@ -97,23 +103,26 @@ int ringbuffer_get(struct ringbuffer_t *rb, uint8_t *dest, size_t size)
 		}
 	}
 
-	mutex_unlock(&rb->tail_lock);
 	return i;
 }
 
-int ringbuffer_put(struct ringbuffer_t *rb, uint8_t *in, size_t size)
+unsigned int ringbuffer_put(struct ringbuffer_t *rb, uint8_t *in, size_t size)
 {
 	mutex_lock(&rb->head_lock);
+	int written = ringbuffer_put_from_isr(rb, in, size);
+	mutex_unlock(&rb->head_lock);
+	return written;
+}
 
-	int i = 0;
+unsigned int ringbuffer_put_from_isr(struct ringbuffer_t *rb, uint8_t *in, size_t size)
+{
+	unsigned int i = 0;
 
 	while (!ringbuffer_full(rb)) {
 		rb->buffer[rb->head] = in[i++];
 		rb->head = (rb->head + 1) % (rb->elements + 1);
 		if (i == size) break;
 	}
-
-	mutex_unlock(&rb->head_lock);
 
 	return i;
 }
