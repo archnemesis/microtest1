@@ -42,19 +42,17 @@
 #include <heap.h>
 #include <private/thread_p.h>
 
-static struct thread_handle_t idle_thread_handle;
-static struct thread_def_t idle_thread_def;
+static struct thread_t idler_thread;
 
-struct thread_list_t thread_list = {
-		.thread = NULL,
-		.next = NULL
-};
 struct thread_t *active_thread = 0;
 struct thread_t *queued_thread = 0;
+struct thread_t *thread_list[THREAD_MAX_THREADS] = { 0 };
+
+void thread_initialize(struct thread_t *thread, void *data);
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 void idler(void *data) {
-	while (1) {}
+	while (1) { __BKPT(); }
 }
 
 uint32_t thread_tick(void);
@@ -85,87 +83,86 @@ struct thread_t *thread_get_current()
 
 uint32_t thread_tick()
 {
-	struct thread_list_t *ptr = &thread_list;
-	struct thread_list_t *top = NULL;
+	struct thread_t *thread = NULL;
+	struct thread_t *top = NULL;
 	uint32_t highest_priority = 0;
 
-	if (ptr->next == NULL) {
-		return 0;
-	}
+	uint32_t i = 0;
 
-	ptr = ptr->next;
+	for (; i < THREAD_MAX_THREADS; i++) {
+		thread = thread_list[i];
 
-	/*
-	 * Loop thread list and find the highest priority
-	 * thread.
-	 */
-	do {
-		switch (ptr->thread->state) {
-		case STATE_READY:
-			if (ptr->thread->running_priority > highest_priority) {
-				highest_priority = ptr->thread->running_priority;
-				top = ptr;
-			}
-
-			break;
-		case STATE_SLEEPING:
-			/* Wake thread */
-			if ((HAL_GetTick() - ptr->thread->sleep_counter) >= ptr->thread->sleep_duration) {
-				ptr->thread->state = STATE_READY;
-				ptr->thread->sleep_counter = 0;
-				ptr->thread->sleep_duration = 0;
-
-				if (ptr->thread->running_priority > highest_priority) {
-					highest_priority = ptr->thread->running_priority;
-					top = ptr;
+		if (thread != NULL) {
+			switch (thread->state) {
+			case STATE_READY:
+				if (thread->running_priority > highest_priority) {
+					highest_priority = thread->running_priority;
+					top = thread;
 				}
-			}
 
-			break;
-		case STATE_WAITING:
-			switch (ptr->thread->wait_condition) {
-			case WAIT_MUTEX:
-				//
-				// mutex timed out, set a flag indicating this so when it
-				// wakes it can check
-				//
-				if ((HAL_GetTick() - ptr->thread->mutex_counter) >= ptr->thread->mutex_timeout) {
-					ptr->thread->state = STATE_READY;
-					ptr->thread->wait_condition = WAIT_NONE;
-					ptr->thread->mutex_waiting = NULL;
-					ptr->thread->mutex_counter = 0;
-					ptr->thread->mutex_timeout = 0;
-					ptr->thread->mutex_priority = 0;
+				break;
+			case STATE_SLEEPING:
+				/* Wake thread */
+				if ((HAL_GetTick() - thread->sleep_counter) >= thread->sleep_duration) {
+					thread->state = STATE_READY;
+					thread->sleep_counter = 0;
+					thread->sleep_duration = 0;
 
-					if (ptr->thread->running_priority > highest_priority) {
-						highest_priority = ptr->thread->running_priority;
-						top = ptr;
+					if (thread->running_priority > highest_priority) {
+						highest_priority = thread->running_priority;
+						top = thread;
 					}
 				}
+
+				break;
+			case STATE_WAITING:
+				switch (thread->wait_condition) {
+				case WAIT_MUTEX:
+					//
+					// mutex timed out, set a flag indicating this so when it
+					// wakes it can check
+					//
+					if ((HAL_GetTick() - thread->mutex_counter) >= thread->mutex_timeout) {
+						thread->state = STATE_READY;
+						thread->wait_condition = WAIT_NONE;
+						thread->mutex_waiting = NULL;
+						thread->mutex_counter = 0;
+						thread->mutex_timeout = 0;
+						thread->mutex_priority = 0;
+
+						if (thread->running_priority > highest_priority) {
+							highest_priority = thread->running_priority;
+							top = thread;
+						}
+					}
+					break;
+				}
+
 				break;
 			}
 
-			break;
+			thread->running_priority++;
 		}
+	}
 
-		ptr->thread->running_priority++;
-		ptr = ptr->next;
-	} while (ptr);
+	if (top == NULL) {
+		return 0;
+	}
 
 	//
 	// if this thread's priority was raised by a mutex held, we
 	// want to remain at that priority until the mutex is released
 	// and priority is reset to the running value
 	//
-	if (ptr->thread->mutex_priority > 0) {
-		top->thread->running_priority = ptr->thread->mutex_priority;
+	if (top->mutex_priority > 0) {
+		top->running_priority = top->mutex_priority;
 	}
 	else {
-		top->thread->running_priority = top->thread->attr.priority;
+		top->running_priority = top->attr.priority;
 	}
 
-	if (top->thread != active_thread) {
-		queued_thread = top->thread;
+	if (top != active_thread) {
+		queued_thread = top;
 		return 1;
 	}
 
@@ -183,21 +180,20 @@ int thread_start(struct thread_handle_t *handle)
 
 uint32_t thread_start_syscall_handler(uint32_t *args)
 {
+	struct thread_t *thread = NULL;
 	struct thread_handle_t *handle = (struct thread_handle_t *)args[0];
-	struct thread_list_t *head = &thread_list;
+	uint32_t i;
 
-	while (head->next != NULL) {
-		head = head->next;
+	for (; i < THREAD_MAX_THREADS; i++) {
+		if (thread_list[i] == NULL) {
+			thread_list[i] = handle->thread;
+			break;
+		}
 	}
 
-	struct thread_list_t *item = (struct thread_list_t *)heap_malloc(sizeof(struct thread_list_t));
-	if (item == NULL) {
-		return E_MALLOC;
+	if (i == THREAD_MAX_THREADS) {
+		return E_INVALID;
 	}
-
-	item->thread = handle->thread;
-	item->next = NULL;
-	head->next = item;
 
 	return E_OK;
 }
@@ -214,22 +210,37 @@ int thread_create(struct thread_handle_t *handle, struct thread_def_t *attr, voi
 	thread->state = STATE_READY;
 	thread->wait_condition = WAIT_NONE;
 
-	// Set stackPointer to end of stack - 64
-	thread->stack_ptr = (uint32_t *)((uint32_t)thread->stack + sizeof(thread->stack) - 64);
-	HW32_REG((uint32_t)thread->stack_ptr + 64) 	= (uint32_t)thread->attr.main;	// program counter
-	HW32_REG((uint32_t)thread->stack_ptr + 68) 	= 0x01000000;					// initial xPSR
-	HW32_REG((uint32_t)thread->stack_ptr + 40) 	= (uint32_t)data;				// pass context as first argument
-	HW32_REG((uint32_t)thread->stack_ptr + 4) 	= 0x3;							// unprivileged thread
-	HW32_REG((uint32_t)thread->stack_ptr) 		= 0xFFFFFFFDUL;					// initial EXC_RETURN
+	thread_initialize(thread, data);
 
 	handle->thread = thread;
 
 	return E_OK;
 }
 
+int thread_create_static(
+		struct thread_t *thread,
+		void *data)
+{
+	thread->state = STATE_READY;
+	thread->wait_condition = WAIT_NONE;
+	thread_initialize(thread, data);
+	return E_OK;
+}
+
+void thread_initialize(struct thread_t *thread, void *data)
+{
+	// Set stackPointer to end of stack - 72
+	thread->stack_ptr = (uint32_t *)((uint32_t)thread->stack + sizeof(thread->stack) - 72);
+	HW32_REG((uint32_t)thread->stack_ptr + 64) 	= (uint32_t)thread->attr.main;	// program counter
+	HW32_REG((uint32_t)thread->stack_ptr + 68) 	= 0x01000000;					// initial xPSR
+	HW32_REG((uint32_t)thread->stack_ptr + 40) 	= (uint32_t)data;				// pass context as first argument
+	HW32_REG((uint32_t)thread->stack_ptr + 4) 	= 0x3;							// unprivileged thread
+	HW32_REG((uint32_t)thread->stack_ptr) 		= 0xFFFFFFFDUL;					// initial EXC_RETURN
+}
+
 int thread_destroy(struct thread_handle_t *handle)
 {
-	if (thread == NULL) {
+	if (handle->thread == NULL) {
 		return E_INVALID;
 	}
 
@@ -252,33 +263,19 @@ uint32_t thread_terminate_syscall_handler(uint32_t *args)
 	struct thread_list_t *ptr = &thread_list;
 	struct thread_list_t *tmp = NULL;
 
-	//
-	// move our pointer to the item before our thread
-	//
-	while (ptr->next != NULL && ptr->next->thread != handle->thread) {
-		ptr = ptr->next;
-	}
+	unsigned int i = 0;
 
-	//
-	// reached end of list without finding our thread
-	//
-	if (ptr->next == NULL) {
-		args[0] = E_OK;
-	}
+	for (i; i < THREAD_MAX_THREADS; i++) {
+		if (thread_list[i] == handle->thread) {
+			thread_list[i] = NULL;
 
-	if (ptr->next->next != NULL) {
-		tmp = ptr->next;				// save our item
-		ptr->next = ptr->next->next;	// move item after ours to present spot
-		heap_free(tmp);						// free that thread_list_t item
-	}
+			if (active_thread == handle->thread) {
+				thread_tick();
+				SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+			}
 
-	//
-	// if the thread we just removed is currently running,
-	// we force a context switch to get a new one going
-	//
-	if (active_thread == handle->thread) {
-		thread_tick();
-		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+			return E_OK;
+		}
 	}
 
 	return E_OK;
@@ -292,14 +289,15 @@ int thread_start_scheduler()
 	syscall(SYSCALL_INIT);
 }
 
-uint32_t thread_start_scheduler_syscall_handler(uint32_t *args)
+uint32_t *thread_start_scheduler_syscall_handler(uint32_t *args)
 {
-	idle_thread_def.main = &idler;
-	idle_thread_def.priority = 1;
-	strcpy((char *)idle_thread_def.name, "0:idler");
+	idler_thread.attr.main = &idler;
+	idler_thread.attr.priority = 1;
+	strcpy((char *)idler_thread.attr.name, "0:idler");
 
-	if (E_OK == thread_create(&idle_thread_handle, &idle_thread_def, NULL)) {
-		return (uint32_t)idle_thread_handle.thread->stack_ptr;
+	if (E_OK == thread_create_static(&idler_thread, NULL)) {
+		thread_list[0] = &idler_thread;
+		return idler_thread.stack_ptr;
 	}
 
 	return NULL;
@@ -308,7 +306,7 @@ uint32_t thread_start_scheduler_syscall_handler(uint32_t *args)
 #pragma GCC diagnostic ignored "-Wreturn-type"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 __attribute__ ((noinline))
-void thread_sleep(time_t time)
+void thread_sleep(unsigned long time)
 {
 	syscall(SYSCALL_THREAD_SLEEP);
 }

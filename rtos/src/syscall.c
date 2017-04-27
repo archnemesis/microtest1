@@ -44,7 +44,34 @@
  * This is used to bootstrap us into thread mode, by returning
  * the stack pointer of the first thread in the SVC_Handler.
  */
-extern uint32_t svc_exc_return;
+extern uint32_t _svc_exc_return;
+
+static syscall_callback syscall_table[] = {
+		&thread_start_scheduler_syscall_handler,
+		&thread_start_syscall_handler,
+		&thread_terminate_syscall_handler,
+		&thread_sleep_syscall_handler,
+		&thread_yield_syscall_handler
+};
+
+void syscall_handler(uint32_t *svc_args);
+
+void SVC_Handler() {
+	__asm__ __volatile__(
+			" TST	LR, #4								\n\t"
+			" ITE	EQ									\n\t"
+			" MRSEQ	R0, MSP								\n\t"
+			" MRSNE	R0, PSP								\n\t"
+			" LDR	LR, _svc_exc_return					\n\t"
+//			" BKPT										\n\t"
+			" STR	LR, [R1]							\n\t"
+			" BL	syscall_handler  					\n\t"
+			" BKPT										\n\t"
+			" LDR	LR, _svc_exc_return							\n\t"
+			" BX	LR									\n\t"
+			".align 4									\n\t"
+			::: "r0");
+}
 
 void syscall_handler(uint32_t *svc_args)
 {
@@ -53,14 +80,14 @@ void syscall_handler(uint32_t *svc_args)
 	if (svc_id == 0) {
 		// special case to start scheduler
 		// modify svc_exc_return to be the stack pointer
-		uint32_t *stack_pointer = (uint32_t *)thread_start_scheduler();
+		uint32_t *stack_pointer = (uint32_t *)thread_start_scheduler_syscall_handler(svc_args);
 
 		if (stack_pointer != NULL) {
-			svc_exc_return = HW32_REG((stack_pointer));
+			_svc_exc_return = HW32_REG((stack_pointer));
 			__set_PSP(((uint32_t)stack_pointer + 10*4));
 			__set_CONTROL(0x3);
 			__ISB();
-			svc_args[0] = 0;
+			return;
 		}
 		else {
 			svc_args[0] = -1;

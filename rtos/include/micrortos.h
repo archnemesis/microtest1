@@ -53,8 +53,8 @@
 #define E_LOCKED			6
 #define E_INVALID			7
 
-#ifndef THREAD_MAX_INTERRUPT_PRIORITY
+#define THREAD_MAX_THREADS				10
 #define THREAD_MAX_INTERRUPT_PRIORITY	5
-#endif
+#define THREAD_IDLE_NAME				"0:idler"
 
 #endif /* INCLUDE_MICRORTOS_H_ */

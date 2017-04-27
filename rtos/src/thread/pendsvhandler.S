@@ -2,14 +2,19 @@
 .syntax unified
 .align 4
 
-#define THREAD_MAX_INTERRUPT_PRIORITY 5
+_thread_switch_context:
+    .extern _thread_switch_context
 
 _current_thread:
-	.word current_thread
+    .word
+    .global _current_thread
+
+#define THREAD_MAX_INTERRUPT_PRIORITY 5
 
 .global PendSV_Handler
     .type PendSV_Handler, %function
 PendSV_Handler:
+    BKPT
 	MRS 		R0, PSP				// Save PSP to R0
 	ISB								// Instruction Sync Barrier
 	MOV			R2, LR

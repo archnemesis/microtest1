@@ -8,6 +8,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "diag/Trace.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_rcc.h"
+#include "stm32f4xx_hal_gpio.h"
+
+#include "micrortos.h"
+#include "thread.h"
 
 // ----------------------------------------------------------------------------
 //
@@ -32,13 +38,28 @@
 int
 main(int argc, char* argv[])
 {
-  // At this stage the system clock should have already been configured
-  // at high speed.
+	__HAL_RCC_GPIOG_CLK_ENABLE();
 
-  // Infinite loop
-  while (1)
+	GPIO_InitTypeDef GPIO_InitStruct;
+
+	//
+	// Green (G13) and Red (G14)
+	//
+	GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
+	thread_start_scheduler();
+
+	GPIO_PinState i = GPIO_PIN_RESET;
+
+	while (1)
     {
-       // Add your code here.
+       HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, i);
+       i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
+       HAL_Delay(100);
     }
 }
 

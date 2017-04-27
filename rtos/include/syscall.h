@@ -42,12 +42,4 @@ typedef uint32_t (*syscall_callback)(uint32_t *args);
 
 #define syscall(code) asm volatile("SVC %[immediate]"::[immediate] "I" (code))
 
-syscall_callback syscall_table[] = {
-		&thread_start_scheduler_syscall_handler,
-		&thread_start_syscall_handler,
-		&thread_terminate_syscall_handler,
-		&thread_sleep_syscall_handler,
-		&thread_yield_syscall_handler
-};
-
 #endif /* INCLUDE_SYSCALL_H_ */

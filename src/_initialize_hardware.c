@@ -142,6 +142,7 @@ SystemClock_Config(void)
 	 * Configure the Systick
 	 */
 	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+	HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
 }
 
 // ----------------------------------------------------------------------------

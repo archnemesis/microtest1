@@ -64,7 +64,9 @@ int mutex_lock_wait(struct mutex_t *mutex, unsigned long timeout)
 		// up if the mutex is freed or if it times out, at which point
 		// we check again
 		//
-		thread_wait_mutex(mutex, timeout);
+		if (active_thread != NULL) {
+			thread_wait_mutex(mutex, timeout);
+		}
 	}
 
 	mutex->holder = thread_get_current();
@@ -77,5 +79,10 @@ int mutex_lock_wait(struct mutex_t *mutex, unsigned long timeout)
 
 void mutex_unlock(struct mutex_t *mutex)
 {
-	thread_release_mutex(mutex);
+	if (active_thread != NULL) {
+		thread_release_mutex(mutex);
+	}
+	else {
+		__mutex_unlock(mutex);
+	}
 }

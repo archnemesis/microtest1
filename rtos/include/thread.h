@@ -92,6 +92,9 @@ struct thread_list_t {
  * To be called only from handler mode!
  */
 
+__attribute__ ((noinline))
+int thread_start_scheduler();
+
 /**
  * Create a new entry in the thread list for the given thread_attr_t.
  *
@@ -101,6 +104,11 @@ struct thread_list_t {
  * @return integer error code
  */
 int thread_create(struct thread_handle_t *handle, struct thread_def_t *attr, void *data);
+
+/**
+ * Create a static thread.
+ */
+int thread_create_static(struct thread_t *thread, void *data);
 
 /**
  * Terminate a thread and remove it from the thread list.
