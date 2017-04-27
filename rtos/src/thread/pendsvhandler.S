@@ -14,7 +14,7 @@ PendSV_Handler:
 	ISB								// Instruction Sync Barrier
 	MOV			R2, LR
 	MRS			R3, CONTROL
-	STMDB 		R0!, {R2-R11}		// Store R4-R11 onto the process stack
+	STMDB 		R0!, {R2-R11}		// Store LR, CONTROL, and R4-R11 onto the process stack
 	TST			R14, #0x10			// Save FPU Context
 	IT			EQ
 	VSTMDBEQ	R0!, {S16-S31}

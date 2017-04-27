@@ -36,6 +36,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <micrortos.h>
+#include <heap.h>
 #include <queue.h>
 
 int queue_init(struct queue_t *queue)
@@ -43,7 +44,7 @@ int queue_init(struct queue_t *queue)
 	mutex_init(&queue->lock_head);
 	mutex_init(&queue->lock_tail);
 
-	struct queue_node_t *node = malloc(sizeof(struct queue_node_t));
+	struct queue_node_t *node = heap_malloc(sizeof(struct queue_node_t));
 
 	if (node == NULL) {
 		return E_MALLOC;
@@ -62,10 +63,10 @@ int queue_destroy(struct queue_t *queue)
 
 	while (node->next != NULL) {
 		queue->head = node->next;
-		free(node);
+		malloc_free(node);
 	}
 
-	free(queue->head);
+	malloc_free(queue->head);
 	queue->head = NULL;
 	queue->tail = NULL;
 
@@ -74,7 +75,7 @@ int queue_destroy(struct queue_t *queue)
 
 int queue_enqueue(struct queue_t *queue, uint32_t item)
 {
-	struct queue_node_t *node = malloc(sizeof(struct queue_node_t));
+	struct queue_node_t *node = heap_malloc(sizeof(struct queue_node_t));
 
 	if (node == NULL) {
 		return E_MALLOC;
@@ -106,7 +107,7 @@ int queue_dequeue(struct queue_t *queue, uint32_t *item)
 	queue->head = new_head;
 
 	mutex_unlock(&queue->lock_head);
-	free(node);
+	malloc_free(node);
 
 	return E_OK;
 }

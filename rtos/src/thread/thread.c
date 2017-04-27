@@ -39,6 +39,7 @@
 #include <string.h>
 #include <syscall.h>
 #include <thread.h>
+#include <heap.h>
 #include <private/thread_p.h>
 
 static struct thread_handle_t idle_thread_handle;
@@ -180,7 +181,7 @@ int thread_start(struct thread_handle_t *handle)
 	syscall(SYSCALL_THREAD_START);
 }
 
-void thread_start_syscall_handler(uint32_t *args)
+uint32_t thread_start_syscall_handler(uint32_t *args)
 {
 	struct thread_handle_t *handle = (struct thread_handle_t *)args[0];
 	struct thread_list_t *head = &thread_list;
@@ -189,21 +190,21 @@ void thread_start_syscall_handler(uint32_t *args)
 		head = head->next;
 	}
 
-	struct thread_list_t *item = (struct thread_list_t *)malloc(sizeof(struct thread_list_t));
+	struct thread_list_t *item = (struct thread_list_t *)heap_malloc(sizeof(struct thread_list_t));
 	if (item == NULL) {
-		args[0] = E_MALLOC;
+		return E_MALLOC;
 	}
 
 	item->thread = handle->thread;
 	item->next = NULL;
 	head->next = item;
 
-	args[0] = E_OK;
+	return E_OK;
 }
 
 int thread_create(struct thread_handle_t *handle, struct thread_def_t *attr, void *data)
 {
-	struct thread_t *thread = (struct thread_t *)malloc(sizeof(struct thread_t));
+	struct thread_t *thread = (struct thread_t *)heap_malloc(sizeof(struct thread_t));
 	if (thread == NULL) {
 		return E_THREAD_NOMEM;
 	}
@@ -226,6 +227,17 @@ int thread_create(struct thread_handle_t *handle, struct thread_def_t *attr, voi
 	return E_OK;
 }
 
+int thread_destroy(struct thread_handle_t *handle)
+{
+	if (thread == NULL) {
+		return E_INVALID;
+	}
+
+	heap_free(handle->thread);
+	handle->thread = NULL;
+	return E_OK;
+}
+
 #pragma GCC diagnostic ignored "-Wreturn-type"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 __attribute__ ((noinline))
@@ -234,7 +246,7 @@ int thread_terminate(struct thread_handle_t *handle)
 	syscall(SYSCALL_THREAD_TERMINATE);
 }
 
-void thread_terminate_syscall_handler(uint32_t *args)
+uint32_t thread_terminate_syscall_handler(uint32_t *args)
 {
 	struct thread_handle_t *handle = (struct thread_handle_t *)args[0];
 	struct thread_list_t *ptr = &thread_list;
@@ -257,7 +269,7 @@ void thread_terminate_syscall_handler(uint32_t *args)
 	if (ptr->next->next != NULL) {
 		tmp = ptr->next;				// save our item
 		ptr->next = ptr->next->next;	// move item after ours to present spot
-		free(tmp);						// free that thread_list_t item
+		heap_free(tmp);						// free that thread_list_t item
 	}
 
 	//
@@ -269,7 +281,7 @@ void thread_terminate_syscall_handler(uint32_t *args)
 		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	}
 
-	args[0] = E_OK;
+	return E_OK;
 }
 
 #pragma GCC diagnostic ignored "-Wreturn-type"
@@ -287,11 +299,10 @@ uint32_t thread_start_scheduler_syscall_handler(uint32_t *args)
 	strcpy((char *)idle_thread_def.name, "0:idler");
 
 	if (E_OK == thread_create(&idle_thread_handle, &idle_thread_def, NULL)) {
-		args[0] = (uint32_t)idle_thread_handle.thread->stack_ptr;
-		return;
+		return (uint32_t)idle_thread_handle.thread->stack_ptr;
 	}
 
-	args[0] = 0;
+	return NULL;
 }
 
 #pragma GCC diagnostic ignored "-Wreturn-type"
@@ -302,7 +313,7 @@ void thread_sleep(time_t time)
 	syscall(SYSCALL_THREAD_SLEEP);
 }
 
-void thread_sleep_syscall_handler(uint32_t *args)
+uint32_t thread_sleep_syscall_handler(uint32_t *args)
 {
 	unsigned long time = (unsigned long)args[0];
 
@@ -311,6 +322,7 @@ void thread_sleep_syscall_handler(uint32_t *args)
 	active_thread->sleep_counter = 0;
 
 	thread_yield_syscall_handler(NULL);
+	return E_OK;
 }
 
 #pragma GCC diagnostic ignored "-Wreturn-type"
@@ -321,11 +333,12 @@ void thread_yield()
 	syscall(SYSCALL_THREAD_SLEEP);
 }
 
-void thread_yield_syscall_handler(uint32_t *args)
+uint32_t thread_yield_syscall_handler(uint32_t *args)
 {
 	if (thread_tick()) {
 		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	}
+	return E_OK;
 }
 
 #pragma GCC diagnostic ignored "-Wreturn-type"
@@ -336,7 +349,7 @@ int thread_wait_mutex(struct mutex_t *mutex, unsigned long timeout)
 	syscall(SYSCALL_THREAD_WAIT_MUTEX);
 }
 
-void thread_wait_mutex_syscall_handler(uint32_t *args)
+uint32_t thread_wait_mutex_syscall_handler(uint32_t *args)
 {
 	struct mutex_t *mutex = (struct mutex_t *)args[0];
 	unsigned long timeout = args[1];
@@ -373,7 +386,7 @@ void thread_wait_mutex_syscall_handler(uint32_t *args)
 		thread_yield_syscall_handler(NULL);
 	}
 
-	args[0] = E_OK;
+	return E_OK;
 }
 
 #pragma GCC diagnostic ignored "-Wreturn-type"
@@ -384,7 +397,7 @@ int thread_release_mutex(struct mutex_t *mutex)
 	syscall(SYSCALL_THREAD_RELEASE_MUTEX);
 }
 
-void thread_release_mutex_syscall_handler(uint32_t *args)
+uint32_t thread_release_mutex_syscall_handler(uint32_t *args)
 {
 	struct mutex_t *mutex = (struct mutex_t *)args[0];
 
@@ -427,5 +440,5 @@ void thread_release_mutex_syscall_handler(uint32_t *args)
 		}
 	}
 
-	args[0] = E_OK;
+	return E_OK;
 }

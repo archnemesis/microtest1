@@ -38,7 +38,7 @@
 #include <thread.h>
 #include <private/thread_p.h>
 
-typedef void (*syscall_callback)(uint32_t *args);
+typedef uint32_t (*syscall_callback)(uint32_t *args);
 
 #define syscall(code) asm volatile("SVC %[immediate]"::[immediate] "I" (code))
 
