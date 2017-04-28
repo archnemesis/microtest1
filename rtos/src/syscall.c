@@ -44,7 +44,7 @@
  * This is used to bootstrap us into thread mode, by returning
  * the stack pointer of the first thread in the SVC_Handler.
  */
-extern uint32_t _svc_exc_return;
+static uint32_t __attribute__((used)) _svc_exc_return;
 
 static syscall_callback syscall_table[] = {
 		&thread_start_scheduler_syscall_handler,
@@ -62,12 +62,11 @@ void SVC_Handler() {
 			" ITE	EQ									\n\t"
 			" MRSEQ	R0, MSP								\n\t"
 			" MRSNE	R0, PSP								\n\t"
-			" LDR	LR, _svc_exc_return					\n\t"
-//			" BKPT										\n\t"
+			" LDR	R1, =_svc_exc_return				\n\t"
 			" STR	LR, [R1]							\n\t"
 			" BL	syscall_handler  					\n\t"
-			" BKPT										\n\t"
-			" LDR	LR, _svc_exc_return							\n\t"
+			" LDR	R1, =_svc_exc_return				\n\t"
+			" LDR	LR, [R1]							\n\t"
 			" BX	LR									\n\t"
 			".align 4									\n\t"
 			::: "r0");
@@ -83,6 +82,7 @@ void syscall_handler(uint32_t *svc_args)
 		uint32_t *stack_pointer = (uint32_t *)thread_start_scheduler_syscall_handler(svc_args);
 
 		if (stack_pointer != NULL) {
+			HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
 			_svc_exc_return = HW32_REG((stack_pointer));
 			__set_PSP(((uint32_t)stack_pointer + 10*4));
 			__set_CONTROL(0x3);

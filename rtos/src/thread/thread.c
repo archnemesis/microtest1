@@ -52,7 +52,9 @@ void thread_initialize(struct thread_t *thread, void *data);
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 void idler(void *data) {
-	while (1) { __BKPT(); }
+	while (1) {
+
+	}
 }
 
 uint32_t thread_tick(void);
@@ -64,6 +66,58 @@ void SysTick_Handler()
 	if (thread_tick() != 0x0) {
 		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	}
+}
+
+void PendSV_Handler()
+{
+	__asm__ __volatile__(
+			" MRS 		R0, PSP						\n\t"	// Save PSP to R0
+			" ISB									\n\t"	// Instruction Sync Barrier
+			"										\n\t"
+			" MOV		R2, LR						\n\t"
+			" MRS		R3, CONTROL					\n\t"
+			" STMDB 	R0!, {R2-R11}				\n\t"	// Store R4-R11 onto the process stack
+			" 										\n\t"
+			" TST		R14, #0x10					\n\t"	// Save FPU Context
+			" IT		EQ							\n\t"
+			" VSTMDBEQ	R0!, {S16-S31}				\n\t"
+			" 										\n\t"
+			" LDR 		R3, =active_thread			\n\t"	// Get current task pointer
+			" LDR		R2, [R3]					\n\t"
+			" STR		R0, [R2]					\n\t"	// Update the current task stack pointer
+			" STMDB		SP!, {R14}					\n\t"	// Save our EXC_RETURN value
+			" 										\n\t"
+			" MOV 		R0, #5						\n\t"	// Block lower-priority interrupts
+			" CPSID		I							\n\t"	// Errata Workaround
+			" MSR		BASEPRI, R0					\n\t"
+			" 										\n\t"
+			" DSB									\n\t"
+			" ISB									\n\t"
+			" CPSIE		I							\n\t"	// Errata Workaround
+			" 										\n\t"
+			" BL 		thread_switch_context		\n\t"
+			" 										\n\t"
+			" MOV		R0, #0						\n\t"
+			" MSR		BASEPRI, R0					\n\t"
+			" LDMIA		SP!, {R14}					\n\t"	// Restore our EXC_RETURN value
+			" 										\n\t"
+			" LDR 		R3, =active_thread			\n\t"	// Get next task pointer
+			" LDR		R1, [R3]					\n\t"	// Load the address of the Stack Pointer
+			" LDR		R0, [R1]					\n\t"	// Load the Stack Pointer
+			" 										\n\t"
+			" TST		R14, #0x10					\n\t"	// Restore FPU Context
+			" IT		EQ							\n\t"
+			" VLDMIAEQ	R0!, {S16-S31}				\n\t"
+			" 										\n\t"
+			" LDMIA		R0!, {R2-R11}				\n\t"
+			" MOV		LR, R2						\n\t"
+			" MSR		CONTROL, R3					\n\t"
+			" ISB									\n\t"
+			" 										\n\t"
+			" MSR		PSP, R0						\n\t"
+			" BX		LR							\n\t"
+			".align 4								\n\t"
+	);
 }
 
 /**
@@ -173,20 +227,19 @@ uint32_t thread_tick()
 #pragma GCC diagnostic ignored "-Wreturn-type"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 __attribute__ ((noinline))
-int thread_start(struct thread_handle_t *handle)
+int thread_start(struct thread_t *thread)
 {
 	syscall(SYSCALL_THREAD_START);
 }
 
 uint32_t thread_start_syscall_handler(uint32_t *args)
 {
-	struct thread_t *thread = NULL;
-	struct thread_handle_t *handle = (struct thread_handle_t *)args[0];
-	uint32_t i;
+	struct thread_t *thread = (struct thread_t *)args[0];
+	unsigned int i = 0;
 
 	for (; i < THREAD_MAX_THREADS; i++) {
 		if (thread_list[i] == NULL) {
-			thread_list[i] = handle->thread;
+			thread_list[i] = thread;
 			break;
 		}
 	}
@@ -252,24 +305,22 @@ int thread_destroy(struct thread_handle_t *handle)
 #pragma GCC diagnostic ignored "-Wreturn-type"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 __attribute__ ((noinline))
-int thread_terminate(struct thread_handle_t *handle)
+int thread_terminate(struct thread_t *thread)
 {
 	syscall(SYSCALL_THREAD_TERMINATE);
 }
 
 uint32_t thread_terminate_syscall_handler(uint32_t *args)
 {
-	struct thread_handle_t *handle = (struct thread_handle_t *)args[0];
-	struct thread_list_t *ptr = &thread_list;
-	struct thread_list_t *tmp = NULL;
+	struct thread_t *thread = (struct thread_t *)args[0];
 
 	unsigned int i = 0;
 
-	for (i; i < THREAD_MAX_THREADS; i++) {
-		if (thread_list[i] == handle->thread) {
+	for (; i < THREAD_MAX_THREADS; i++) {
+		if (thread_list[i] == thread) {
 			thread_list[i] = NULL;
 
-			if (active_thread == handle->thread) {
+			if (active_thread == thread) {
 				thread_tick();
 				SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 			}
@@ -291,12 +342,20 @@ int thread_start_scheduler()
 
 uint32_t *thread_start_scheduler_syscall_handler(uint32_t *args)
 {
+	unsigned int i = 0;
 	idler_thread.attr.main = &idler;
 	idler_thread.attr.priority = 1;
 	strcpy((char *)idler_thread.attr.name, "0:idler");
 
 	if (E_OK == thread_create_static(&idler_thread, NULL)) {
-		thread_list[0] = &idler_thread;
+		for (; i < THREAD_MAX_THREADS; i++) {
+			if (thread_list[i] == NULL) {
+				thread_list[i] = &idler_thread;
+				break;
+			}
+		}
+
+		active_thread = &idler_thread;
 		return idler_thread.stack_ptr;
 	}
 
@@ -317,7 +376,7 @@ uint32_t thread_sleep_syscall_handler(uint32_t *args)
 
 	active_thread->state = STATE_SLEEPING;
 	active_thread->sleep_duration = time;
-	active_thread->sleep_counter = 0;
+	active_thread->sleep_counter = HAL_GetTick();
 
 	thread_yield_syscall_handler(NULL);
 	return E_OK;

@@ -64,13 +64,13 @@ struct thread_def_t {
 
 struct thread_t {
 	volatile uint32_t *stack_ptr;
+	uint32_t stack[512];
 	volatile enum thread_state state;
 	volatile enum thread_wait_condition wait_condition;
 	volatile uint32_t running_priority;
 	struct thread_def_t attr;
 	uint32_t sleep_counter;
 	uint32_t sleep_duration;
-	uint32_t stack[1024];
 	volatile struct mutex_t *mutex_waiting;
 	volatile uint32_t mutex_timeout;
 	volatile uint32_t mutex_counter;
@@ -125,7 +125,7 @@ int thread_destroy(struct thread_handle_t *handle);
  * @return integer error code
  */
 __attribute__ ((noinline))
-int thread_start(struct thread_handle_t *handle);
+int thread_start(struct thread_t *thread);
 
 /**
  * Remove a thread from the global thread queue.
@@ -134,7 +134,7 @@ int thread_start(struct thread_handle_t *handle);
  * @return integer error code
  */
 __attribute__ ((noinline))
-int thread_terminate(struct thread_handle_t *handle);
+int thread_terminate(struct thread_t *thread);
 
 /**
  * Wait for a thread to finish.
