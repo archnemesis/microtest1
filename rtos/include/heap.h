@@ -34,11 +34,19 @@
 #ifndef INCLUDE_HEAP_H_
 #define INCLUDE_HEAP_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 
 int heap_init();
 void *heap_malloc(size_t size);
 void heap_free(void *ptr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INCLUDE_HEAP_H_ */

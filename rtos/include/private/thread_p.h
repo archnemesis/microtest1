@@ -34,6 +34,10 @@
 #ifndef INCLUDE_PRIVATE_THREAD_P_H_
 #define INCLUDE_PRIVATE_THREAD_P_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <thread.h>
 
@@ -46,6 +50,13 @@ uint32_t thread_start_syscall_handler(uint32_t *args);
 uint32_t thread_terminate_syscall_handler(uint32_t *args);
 uint32_t thread_sleep_syscall_handler(uint32_t *args);
 uint32_t thread_yield_syscall_handler(uint32_t *args);
+uint32_t thread_wait_mutex_syscall_handler(uint32_t *args);
+uint32_t thread_release_mutex_syscall_handler(uint32_t *args);
+uint32_t thread_wait_event_syscall_handler(uint32_t *args);
 void thread_switch_context();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INCLUDE_PRIVATE_THREAD_P_H_ */

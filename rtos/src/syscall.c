@@ -51,7 +51,10 @@ static syscall_callback syscall_table[] = {
 		&thread_start_syscall_handler,
 		&thread_terminate_syscall_handler,
 		&thread_sleep_syscall_handler,
-		&thread_yield_syscall_handler
+		&thread_wait_mutex_syscall_handler,
+		&thread_yield_syscall_handler,
+		&thread_release_mutex_syscall_handler,
+		&thread_wait_event_syscall_handler
 };
 
 void syscall_handler(uint32_t *svc_args);

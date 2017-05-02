@@ -26,34 +26,55 @@
  */
 
 /**
- * @file	/microtest1/rtos/src/heap.c/heap.c
+ * @file	/microtest1/rtos/src/cpp/thread_cpp.cpp/thread_cpp.cpp
  * @author	robin
- * @date	Apr 24, 2017
+ * @date	Apr 29, 2017
  * @brief	[DESCRIPTION]
  */
 
-#include <heap.h>
-#include <mutex.h>
+#include <thread.h>
 
-static struct mutex_t malloc_mutex;
-
-int heap_init()
+Thread::Thread(unsigned int priority)
 {
-	mutex_init(&malloc_mutex);
-	return E_OK;
+	m_priority = priority;
+	m_thread.attr.main = Thread::start_wrapper;
+	m_thread.attr.priority = m_priority;
+	thread_create_static(&m_thread, (void *)this);
 }
 
-void *heap_malloc(size_t size)
+Thread::~Thread()
 {
-	mutex_lock_wait(&malloc_mutex, 0);
-	void *ptr = malloc(size);
-	mutex_unlock(&malloc_mutex);
-	return ptr;
+
 }
 
-void heap_free(void *ptr)
+void Thread::start_wrapper(void *ptr)
 {
-	mutex_lock_wait(&malloc_mutex, 0);
-	free(ptr);
-	mutex_unlock(&malloc_mutex);
+	Thread *thiz = static_cast<Thread *>(ptr);
+	thiz->wrapper();
+}
+
+void Thread::start()
+{
+	thread_start(&m_thread);
+}
+
+void Thread::wrapper()
+{
+	run();
+	terminate();
+}
+
+void Thread::terminate()
+{
+	thread_terminate(&m_thread);
+}
+
+void Thread::sleep(unsigned int time)
+{
+	thread_sleep(time);
+}
+
+void Thread::waitForEvent(uint32_t event_mask)
+{
+	thread_wait_event(event_mask);
 }

@@ -34,6 +34,10 @@
 #ifndef INCLUDE_RINGBUFFER_H_
 #define INCLUDE_RINGBUFFER_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <mutex.h>
@@ -53,7 +57,12 @@ struct ringbuffer_t {
  *
  * @return int OS_STATUS
  */
-int ringbuffer_init(struct ringbuffer_t *rb, size_t size, unsigned int elements);
+int ringbuffer_init(struct ringbuffer_t *rb, size_t size);
+
+/**
+ * Initialize a ring buffer using static memory.
+ */
+int ringbuffer_init_static(struct ringbuffer_t *rb, size_t size, uint8_t *buffer);
 
 /**
  * Free memory used by the buffer.
@@ -113,5 +122,9 @@ unsigned int ringbuffer_put(struct ringbuffer_t *rb, uint8_t *in, size_t size);
  * @return int bytes written
  */
 unsigned int ringbuffer_put_from_isr(struct ringbuffer_t *rb, uint8_t *in, size_t size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INCLUDE_RINGBUFFER_H_ */

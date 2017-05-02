@@ -26,34 +26,39 @@
  */
 
 /**
- * @file	/microtest1/rtos/src/heap.c/heap.c
+ * @file	/microtest1/include/test_thread_1.h/test_thread_1.h
  * @author	robin
- * @date	Apr 24, 2017
+ * @date	Apr 29, 2017
  * @brief	[DESCRIPTION]
  */
+#ifndef INCLUDE_TEST_THREAD_1_H_
+#define INCLUDE_TEST_THREAD_1_H_
 
-#include <heap.h>
-#include <mutex.h>
+#include <thread.h>
 
-static struct mutex_t malloc_mutex;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-int heap_init()
-{
-	mutex_init(&malloc_mutex);
-	return E_OK;
+void test_thread_1_main();
+
+#ifdef __cplusplus
 }
+#endif
 
-void *heap_malloc(size_t size)
-{
-	mutex_lock_wait(&malloc_mutex, 0);
-	void *ptr = malloc(size);
-	mutex_unlock(&malloc_mutex);
-	return ptr;
-}
+#ifdef __cplusplus
 
-void heap_free(void *ptr)
+class TestThread : public Thread
 {
-	mutex_lock_wait(&malloc_mutex, 0);
-	free(ptr);
-	mutex_unlock(&malloc_mutex);
-}
+public:
+	TestThread(unsigned int gpio, unsigned int sleep);
+	virtual ~TestThread();
+protected:
+	virtual void run();
+	unsigned int m_gpio;
+	unsigned int m_sleep;
+};
+
+#endif
+
+#endif /* INCLUDE_TEST_THREAD_1_H_ */

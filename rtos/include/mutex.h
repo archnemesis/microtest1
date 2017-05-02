@@ -34,17 +34,25 @@
 #ifndef INCLUDE_MUTEX_H_
 #define INCLUDE_MUTEX_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <thread.h>
 
 struct mutex_t {
-	uint8_t locked;
+	uint32_t locked;
 	struct thread_t *holder;
 };
 
 void mutex_init(struct mutex_t *mutex);
 void __mutex_unlock(struct mutex_t *mutex);
-void mutex_lock(struct mutex_t *mutex);
 int mutex_lock_nonblocking(struct mutex_t *mutex);
+int mutex_lock_wait(struct mutex_t *mutex, unsigned long timeout);
 void mutex_unlock(struct mutex_t *mutex);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INCLUDE_MUTEX_H_ */

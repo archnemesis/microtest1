@@ -34,11 +34,12 @@
 
 #include <ringbuffer.h>
 #include <micrortos.h>
+#include <heap.h>
 #include <stddef.h>
 
-int ringbuffer_init(struct ringbuffer_t *rb, size_t size, unsigned int elements)
+int ringbuffer_init(struct ringbuffer_t *rb, size_t size)
 {
-	rb->buffer = malloc(size * (elements + 1));
+	rb->buffer = (uint8_t *)heap_malloc(size + 1);
 
 	if (rb->buffer == NULL) {
 		return E_MALLOC;
@@ -47,7 +48,20 @@ int ringbuffer_init(struct ringbuffer_t *rb, size_t size, unsigned int elements)
 	rb->head = 0;
 	rb->tail = 0;
 	rb->size = size;
-	rb->elements = elements;
+
+	mutex_init(&rb->head_lock);
+	mutex_init(&rb->tail_lock);
+
+	return E_OK;
+}
+
+int ringbuffer_init_static(struct ringbuffer_t *rb, size_t size, uint8_t *buffer)
+{
+	rb->buffer = buffer;
+
+	rb->head = 0;
+	rb->tail = 0;
+	rb->size = size;
 
 	mutex_init(&rb->head_lock);
 	mutex_init(&rb->tail_lock);
@@ -99,7 +113,7 @@ unsigned int ringbuffer_get_from_isr(struct ringbuffer_t *rb, uint8_t *dest, siz
 	if (available > 0) {
 		for (; i < available && i < size; i++) {
 			dest[i] = rb->buffer[rb->tail];
-			rb->tail = (rb->tail + 1) % (rb->elements + 1);
+			rb->tail = (rb->tail + 1) % (rb->size + 1);
 		}
 	}
 
@@ -120,7 +134,7 @@ unsigned int ringbuffer_put_from_isr(struct ringbuffer_t *rb, uint8_t *in, size_
 
 	while (!ringbuffer_full(rb)) {
 		rb->buffer[rb->head] = in[i++];
-		rb->head = (rb->head + 1) % (rb->elements + 1);
+		rb->head = (rb->head + 1) % (rb->size + 1);
 		if (i == size) break;
 	}
 

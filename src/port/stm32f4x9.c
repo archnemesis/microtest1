@@ -26,34 +26,9 @@
  */
 
 /**
- * @file	/microtest1/rtos/src/heap.c/heap.c
+ * @file	/microtest1/src/port/stm32f4x9.c/stm32f4x9.c
  * @author	robin
- * @date	Apr 24, 2017
+ * @date	Apr 29, 2017
  * @brief	[DESCRIPTION]
  */
 
-#include <heap.h>
-#include <mutex.h>
-
-static struct mutex_t malloc_mutex;
-
-int heap_init()
-{
-	mutex_init(&malloc_mutex);
-	return E_OK;
-}
-
-void *heap_malloc(size_t size)
-{
-	mutex_lock_wait(&malloc_mutex, 0);
-	void *ptr = malloc(size);
-	mutex_unlock(&malloc_mutex);
-	return ptr;
-}
-
-void heap_free(void *ptr)
-{
-	mutex_lock_wait(&malloc_mutex, 0);
-	free(ptr);
-	mutex_unlock(&malloc_mutex);
-}

@@ -34,6 +34,10 @@
 #ifndef INCLUDE_QUEUE_H_
 #define INCLUDE_QUEUE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <mutex.h>
 
@@ -53,5 +57,9 @@ int queue_init(struct queue_t *queue);
 int queue_enqueue(struct queue_t *queue, uint32_t item);
 int queue_dequeue(struct queue_t *queue, uint32_t *item);
 int queue_destroy(struct queue_t *queue);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INCLUDE_QUEUE_H_ */

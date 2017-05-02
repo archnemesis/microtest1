@@ -26,34 +26,45 @@
  */
 
 /**
- * @file	/microtest1/rtos/src/heap.c/heap.c
+ * @file	/microtest1/src/test_thread_1.cpp/test_thread_1.cpp
  * @author	robin
- * @date	Apr 24, 2017
+ * @date	Apr 29, 2017
  * @brief	[DESCRIPTION]
  */
 
-#include <heap.h>
-#include <mutex.h>
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_rcc.h"
+#include "stm32f4xx_hal_gpio.h"
+#include <test_thread_1.h>
 
-static struct mutex_t malloc_mutex;
+TestThread testThread1(GPIO_PIN_13, 50);
+TestThread testThread2(GPIO_PIN_14, 60);
 
-int heap_init()
+void test_thread_1_main()
 {
-	mutex_init(&malloc_mutex);
-	return E_OK;
+	testThread1.start();
+	testThread2.start();
 }
 
-void *heap_malloc(size_t size)
+TestThread::TestThread(unsigned int gpio, unsigned int sleep) : Thread()
 {
-	mutex_lock_wait(&malloc_mutex, 0);
-	void *ptr = malloc(size);
-	mutex_unlock(&malloc_mutex);
-	return ptr;
+	m_gpio = gpio;
+	m_sleep = sleep;
 }
 
-void heap_free(void *ptr)
+TestThread::~TestThread()
 {
-	mutex_lock_wait(&malloc_mutex, 0);
-	free(ptr);
-	mutex_unlock(&malloc_mutex);
+
+}
+
+void TestThread::run()
+{
+	GPIO_PinState i = GPIO_PIN_SET;
+
+	while (1)
+    {
+		HAL_GPIO_WritePin(GPIOG, m_gpio, i);
+		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
+		sleep(m_sleep);
+    }
 }

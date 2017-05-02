@@ -50,7 +50,7 @@ int mutex_lock_wait(struct mutex_t *mutex, unsigned long timeout)
 	//
 	// try a quick lock to save time
 	//
-	while (!mutex_lock_nonblocking(mutex)) {
+	while (E_LOCKED == mutex_lock_nonblocking(mutex)) {
 		//
 		// timed out waiting for lock
 		//

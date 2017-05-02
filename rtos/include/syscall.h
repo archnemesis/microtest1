@@ -34,6 +34,10 @@
 #ifndef INCLUDE_SYSCALL_H_
 #define INCLUDE_SYSCALL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <micrortos.h>
 #include <thread.h>
 #include <private/thread_p.h>
@@ -41,5 +45,9 @@
 typedef uint32_t (*syscall_callback)(uint32_t *args);
 
 #define syscall(code) asm volatile("SVC %[immediate]"::[immediate] "I" (code))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INCLUDE_SYSCALL_H_ */

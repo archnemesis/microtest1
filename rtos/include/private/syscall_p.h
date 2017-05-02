@@ -34,6 +34,14 @@
 #ifndef INCLUDE_PRIVATE_SYSCALL_P_H_
 #define INCLUDE_PRIVATE_SYSCALL_P_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void syscall_handler(uint32_t *svc_args);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INCLUDE_PRIVATE_SYSCALL_P_H_ */

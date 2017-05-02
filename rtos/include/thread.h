@@ -34,6 +34,10 @@
 #ifndef INCLUDE_THREAD_H_
 #define INCLUDE_THREAD_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <micrortos.h>
 #include <mutex.h>
@@ -64,17 +68,19 @@ struct thread_def_t {
 
 struct thread_t {
 	volatile uint32_t *stack_ptr;
-	uint32_t stack[512];
-	volatile enum thread_state state;
-	volatile enum thread_wait_condition wait_condition;
-	volatile uint32_t running_priority;
+	uint32_t event_flags;
+	uint32_t event_wait_mask;
+	enum thread_state state;
+	enum thread_wait_condition wait_condition;
+	uint32_t running_priority;
 	struct thread_def_t attr;
 	uint32_t sleep_counter;
 	uint32_t sleep_duration;
-	volatile struct mutex_t *mutex_waiting;
-	volatile uint32_t mutex_timeout;
-	volatile uint32_t mutex_counter;
-	volatile uint32_t mutex_priority;
+	struct mutex_t *mutex_waiting;
+	uint32_t mutex_timeout;
+	uint32_t mutex_counter;
+	uint32_t mutex_priority;
+	uint32_t stack[512];
 };
 
 struct thread_handle_t {
@@ -116,7 +122,7 @@ int thread_create_static(struct thread_t *thread, void *data);
  * @param handle the thread handle
  * @return integer error code
  */
-int thread_destroy(struct thread_handle_t *handle);
+int thread_destroy(struct thread_t *thread);
 
 /**
  * Add a thread to the global thread queue and run it.
@@ -160,7 +166,6 @@ void thread_yield(void);
 /**
  * Exit a thread, removing it from the thread list.
  */
-__attribute__ ((noinline))
 void thread_exit(void);
 
 /**
@@ -168,6 +173,12 @@ void thread_exit(void);
  */
 __attribute__ ((noinline))
 int thread_wait_mutex(struct mutex_t *mutex, unsigned long timeout);
+
+/**
+ * Wait for an event.
+ */
+__attribute__ ((noinline))
+int thread_wait_event(uint32_t event_mask);
 
 /**
  * Release a mutex and trigger higher priority waiting tasks.
@@ -179,5 +190,30 @@ int thread_release_mutex(struct mutex_t *mutex);
  * Get handle for a thread.
  */
 struct thread_t *thread_get_current();
+
+#ifdef __cplusplus
+}
+
+class Thread {
+public:
+	Thread(unsigned int priority = 1);
+	virtual ~Thread();
+	void start();
+	void terminate();
+	void notify(uint32_t event_mask);
+
+protected:
+	virtual void run() = 0;
+	void sleep(unsigned int time = 0);
+	void wrapper();
+	void waitForEvent(uint32_t event_mask);
+
+	struct thread_t m_thread;
+	unsigned int m_priority;
+private:
+	static void start_wrapper(void *ptr);
+};
+
+#endif
 
 #endif /* INCLUDE_THREAD_H_ */

@@ -155,6 +155,12 @@ uint32_t thread_tick()
 				}
 
 				break;
+			case STATE_TERMINATED:
+				//
+				// thread was terminated, remove it from the thread list
+				//
+				thread_list[i] = NULL;
+				break;
 			case STATE_SLEEPING:
 				/* Wake thread */
 				if ((HAL_GetTick() - thread->sleep_counter) >= thread->sleep_duration) {
@@ -171,25 +177,59 @@ uint32_t thread_tick()
 				break;
 			case STATE_WAITING:
 				switch (thread->wait_condition) {
-				case WAIT_MUTEX:
-					//
-					// mutex timed out, set a flag indicating this so when it
-					// wakes it can check
-					//
-					if ((HAL_GetTick() - thread->mutex_counter) >= thread->mutex_timeout) {
-						thread->state = STATE_READY;
-						thread->wait_condition = WAIT_NONE;
-						thread->mutex_waiting = NULL;
-						thread->mutex_counter = 0;
-						thread->mutex_timeout = 0;
-						thread->mutex_priority = 0;
+					case WAIT_MUTEX:
+					{
+						//
+						// mutex timed out, set a flag indicating this so when it
+						// wakes it can check
+						//
+						if (thread->mutex_timeout > 0 && (HAL_GetTick() - thread->mutex_counter) >= thread->mutex_timeout) {
+							thread->state = STATE_READY;
+							thread->wait_condition = WAIT_NONE;
+							thread->mutex_waiting = NULL;
+							thread->mutex_counter = 0;
+							thread->mutex_timeout = 0;
+							thread->mutex_priority = 0;
 
-						if (thread->running_priority > highest_priority) {
-							highest_priority = thread->running_priority;
-							top = thread;
+							if (thread->running_priority > highest_priority) {
+								highest_priority = thread->running_priority;
+								top = thread;
+							}
 						}
+						break;
 					}
-					break;
+					case WAIT_EVENT:
+					{
+						if ((thread->event_flags & thread->event_wait_mask) == thread->event_wait_mask) {
+							thread->state = STATE_READY;
+							thread->wait_condition = WAIT_NONE;
+
+							//
+							// clear the awaited event bits from the event
+							// register with LDREX/STREX to make sure we don't
+							// clear bits set for other events in ISRs
+							//
+							__asm__ __volatile__(
+									"	LDR		R0, %[t]				\n\t"
+									"1:	LDREX	R1, [R0, #4]			\n\t"
+									"	BIC		R1, R1, %[e]			\n\t"
+									"	STREX	R2, R1, [R0, #4]		\n\t"
+									"	CMP		R2, #1					\n\t"
+									"	IT		EQ						\n\t"
+									"	BEQ		1b						\n\t"
+									".align 4"
+								: : [t] "m" (thread), [e] "r" (thread->event_wait_mask)
+							);
+
+							thread->event_wait_mask = 0;
+
+							if (thread->running_priority > highest_priority) {
+								highest_priority = thread->running_priority;
+								top = thread;
+							}
+						}
+						break;
+					}
 				}
 
 				break;
@@ -223,6 +263,51 @@ uint32_t thread_tick()
 	return 0;
 }
 
+int thread_notify(struct thread_t *thread, uint32_t event_bits)
+{
+	__asm__ __volatile__(
+			"	LDR		R0, %[t]				\n\t"
+			"1:	LDREX	R1, [R0, #4]			\n\t"
+			"	ORR		R1, R1, %[e]			\n\t"
+			"	STREX	R2, R1, [R0, #4]		\n\t"
+			"	CMP		R2, #1					\n\t"
+			"	IT		EQ						\n\t"
+			"	BEQ		1b						\n\t"
+			".align 4"
+		: : [t] "m" (thread), [e] "r" (event_bits)
+	);
+
+	return E_OK;
+}
+
+#pragma GCC diagnostic ignored "-Wreturn-type"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+__attribute__ ((noinline))
+int thread_wait_event(uint32_t event_mask)
+{
+	syscall(SYSCALL_THREAD_WAIT_EVENT);
+}
+
+uint32_t thread_wait_event_syscall_handler(uint32_t *args)
+{
+	struct thread_t *thread = active_thread;
+	unsigned int event_mask = args[0];
+
+	if ((thread->event_flags & event_mask) == event_mask) {
+		return E_OK;
+	}
+
+	thread->state = STATE_WAITING;
+	thread->wait_condition = WAIT_EVENT;
+	thread->event_wait_mask = event_mask;
+	thread_yield_syscall_handler(NULL);
+}
+
+int thread_notify_from_isr(struct thread_t *thread, uint32_t event_bits)
+{
+	thread->event_flags |= event_bits;
+	return E_OK;
+}
 
 #pragma GCC diagnostic ignored "-Wreturn-type"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -260,8 +345,6 @@ int thread_create(struct thread_handle_t *handle, struct thread_def_t *attr, voi
 
 	memcpy(&thread->attr, attr, sizeof(struct thread_def_t));
 	memset(&thread->stack, 0, sizeof(thread->stack));
-	thread->state = STATE_READY;
-	thread->wait_condition = WAIT_NONE;
 
 	thread_initialize(thread, data);
 
@@ -274,16 +357,25 @@ int thread_create_static(
 		struct thread_t *thread,
 		void *data)
 {
-	thread->state = STATE_READY;
-	thread->wait_condition = WAIT_NONE;
 	thread_initialize(thread, data);
 	return E_OK;
 }
 
 void thread_initialize(struct thread_t *thread, void *data)
 {
-	// Set stackPointer to end of stack - 72
+	thread->running_priority = thread->attr.priority;
+	thread->state = STATE_READY;
+	thread->wait_condition = WAIT_NONE;
+	thread->event_flags = 0;
+	thread->event_wait_mask = 0;
+
+	//
+	// The stack must be set up such that the processor will unstack it
+	// properly before executing the thread. We set up the initial PC, SP and
+	// pass arguments via the stacked r0-r3 registers.
+	//
 	thread->stack_ptr = (uint32_t *)((uint32_t)thread->stack + sizeof(thread->stack) - 72);
+
 	HW32_REG((uint32_t)thread->stack_ptr + 64) 	= (uint32_t)thread->attr.main;	// program counter
 	HW32_REG((uint32_t)thread->stack_ptr + 68) 	= 0x01000000;					// initial xPSR
 	HW32_REG((uint32_t)thread->stack_ptr + 40) 	= (uint32_t)data;				// pass context as first argument
@@ -291,14 +383,14 @@ void thread_initialize(struct thread_t *thread, void *data)
 	HW32_REG((uint32_t)thread->stack_ptr) 		= 0xFFFFFFFDUL;					// initial EXC_RETURN
 }
 
-int thread_destroy(struct thread_handle_t *handle)
+int thread_destroy(struct thread_t *thread)
 {
-	if (handle->thread == NULL) {
+	if (thread == NULL) {
 		return E_INVALID;
 	}
 
-	heap_free(handle->thread);
-	handle->thread = NULL;
+	heap_free(thread);
+	thread = NULL;
 	return E_OK;
 }
 
@@ -318,7 +410,7 @@ uint32_t thread_terminate_syscall_handler(uint32_t *args)
 
 	for (; i < THREAD_MAX_THREADS; i++) {
 		if (thread_list[i] == thread) {
-			thread_list[i] = NULL;
+			thread_list[i]->state = STATE_TERMINATED;
 
 			if (active_thread == thread) {
 				thread_tick();
@@ -330,6 +422,11 @@ uint32_t thread_terminate_syscall_handler(uint32_t *args)
 	}
 
 	return E_OK;
+}
+
+void thread_exit()
+{
+	thread_terminate(active_thread);
 }
 
 #pragma GCC diagnostic ignored "-Wreturn-type"
@@ -415,6 +512,7 @@ uint32_t thread_wait_mutex_syscall_handler(uint32_t *args)
 	// if threading is enabled we set this thread to waiting state
 	//
 	if (active_thread) {
+		active_thread->state = STATE_WAITING;
 		active_thread->wait_condition = WAIT_MUTEX;
 		active_thread->mutex_waiting = mutex;
 		active_thread->mutex_timeout = timeout;
@@ -465,31 +563,32 @@ uint32_t thread_release_mutex_syscall_handler(uint32_t *args)
 		// cycle thread list and unlock highest priority thread
 		// waiting on this mutex
 		//
-		struct thread_list_t *ptr = &thread_list;
-		struct thread_t *next_thread = NULL;
 
-		while (ptr->next != NULL) {
-			if (ptr->thread->state == STATE_WAITING && ptr->thread->wait_condition == WAIT_MUTEX) {
-				if (ptr->thread->mutex_waiting == mutex) {
-					if (next_thread == NULL || ptr->thread->attr.priority > next_thread->attr.priority) {
-						next_thread = ptr->thread;
+		struct thread_t *thread = NULL;
+		struct thread_t *tmp;
+		unsigned int i = 0;
+		unsigned int p = 0;
+
+		for (; i < THREAD_MAX_THREADS; i++) {
+			tmp = thread_list[i];
+
+			if (tmp->state == STATE_WAITING) {
+				if (tmp->wait_condition == WAIT_MUTEX) {
+					if (tmp->attr.priority > p) {
+						thread = tmp;
+						p = tmp->attr.priority;
 					}
 				}
 			}
-			ptr = ptr->next;
 		}
 
-		//
-		// we found a thread waiting with a higher priority, so we trigger a context
-		// switch to let it go
-		//
-		if (next_thread != NULL && next_thread->attr.priority > active_thread->attr.priority) {
-			next_thread->state = STATE_READY;
-			next_thread->wait_condition = WAIT_NONE;
-			next_thread->mutex_waiting = NULL;
-			next_thread->mutex_counter = 0;
-			next_thread->mutex_timeout = 0;
-			next_thread->mutex_priority = 0;
+		if (thread != NULL) {
+			thread->state = STATE_READY;
+			thread->wait_condition = WAIT_NONE;
+			thread->mutex_waiting = NULL;
+			thread->mutex_counter = 0;
+			thread->mutex_timeout = 0;
+			thread->mutex_priority = 0;
 
 			if (thread_tick()) {
 				SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;

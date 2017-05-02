@@ -15,9 +15,12 @@
 
 #include "micrortos.h"
 #include "thread.h"
+#include "mutex.h"
+#include "ringbuffer.h"
+#include "test_thread_1.h"
 
-static struct thread_t test_thread_1;
-static struct thread_t test_thread_2;
+static struct mutex_t test_mutex;
+static struct ringbuffer_t test_buffer;
 
 // ----------------------------------------------------------------------------
 //
@@ -39,30 +42,6 @@ static struct thread_t test_thread_2;
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-void test_thread_1_main(void *data)
-{
-	GPIO_PinState i = GPIO_PIN_RESET;
-
-	while (1)
-    {
-       HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, i);
-       i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
-       thread_sleep(200);
-    }
-}
-
-void test_thread_2_main(void *data)
-{
-	GPIO_PinState i = GPIO_PIN_SET;
-
-	while (1)
-    {
-		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, i);
-		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
-		thread_sleep(100);
-    }
-}
-
 int
 main(int argc, char* argv[])
 {
@@ -79,17 +58,9 @@ main(int argc, char* argv[])
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
-	test_thread_1.attr.priority = 10;
-	test_thread_1.attr.main = &test_thread_1_main;
-	strcpy(test_thread_1.attr.name, "1:test-thread-1");
-	thread_create_static(&test_thread_1, NULL);
-	thread_start(&test_thread_1);
+	test_thread_1_main();
 
-	test_thread_2.attr.priority = 10;
-	test_thread_2.attr.main = &test_thread_2_main;
-	strcpy(test_thread_2.attr.name, "1:test-thread-2");
-	thread_create_static(&test_thread_2, NULL);
-	thread_start(&test_thread_2);
+	ringbuffer_init(&test_buffer, 1024);
 
 	thread_start_scheduler();
 

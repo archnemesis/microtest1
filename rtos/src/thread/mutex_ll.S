@@ -4,8 +4,6 @@
 
 #include <micrortos.h>
 
-_current_thread:
-	.word current_thread
 
 .global __mutex_unlock
 	.type __mutex_unlock, %function
