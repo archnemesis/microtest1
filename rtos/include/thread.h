@@ -68,7 +68,7 @@ struct thread_def_t {
 
 struct thread_t {
 	volatile uint32_t *stack_ptr;
-	uint32_t event_flags;
+	volatile uint32_t event_flags;
 	uint32_t event_wait_mask;
 	enum thread_state state;
 	enum thread_wait_condition wait_condition;
@@ -185,6 +185,11 @@ int thread_wait_event(uint32_t event_mask);
  */
 __attribute__ ((noinline))
 int thread_release_mutex(struct mutex_t *mutex);
+
+/**
+ * Send a notification to a thread.
+ */
+int thread_notify(struct thread_t *thread, uint32_t event_bits);
 
 /**
  * Get handle for a thread.

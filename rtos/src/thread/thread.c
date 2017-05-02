@@ -144,6 +144,8 @@ uint32_t thread_tick()
 	uint32_t i = 0;
 
 	for (; i < THREAD_MAX_THREADS; i++) {
+		if (thread_list[i] == NULL) break;
+
 		thread = thread_list[i];
 
 		if (thread != NULL) {
@@ -211,16 +213,16 @@ uint32_t thread_tick()
 							//
 							__asm__ __volatile__(
 									"	LDR		R0, %[t]				\n\t"
-									"1:	LDREX	R1, [R0, #4]			\n\t"
-									"	BIC		R1, R1, %[e]			\n\t"
-									"	STREX	R2, R1, [R0, #4]		\n\t"
-									"	CMP		R2, #1					\n\t"
+									"1:	LDREX	R2, [R0, #4]			\n\t"
+									"	BIC		R2, R2, R1				\n\t"
+									"	STREX	R3, R2, [R0, #4]		\n\t"
+									"	CMP		R3, #1					\n\t"
 									"	IT		EQ						\n\t"
 									"	BEQ		1b						\n\t"
 									".align 4"
-								: : [t] "m" (thread), [e] "r" (thread->event_wait_mask)
+								: : [t] "m" (thread), [e] "r" (thread->event_wait_mask) : "r0", "r2", "r3"
 							);
-
+							//thread->event_flags &= ~thread->event_wait_mask;
 							thread->event_wait_mask = 0;
 
 							if (thread->running_priority > highest_priority) {
@@ -263,19 +265,19 @@ uint32_t thread_tick()
 	return 0;
 }
 
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+__attribute__ ((noinline))
 int thread_notify(struct thread_t *thread, uint32_t event_bits)
 {
 	__asm__ __volatile__(
-			"	LDR		R0, %[t]				\n\t"
-			"1:	LDREX	R1, [R0, #4]			\n\t"
-			"	ORR		R1, R1, %[e]			\n\t"
-			"	STREX	R2, R1, [R0, #4]		\n\t"
-			"	CMP		R2, #1					\n\t"
+			"1:	LDREX	R2, [R0, #4]			\n\t"
+			"	ORR		R2, R2, R1				\n\t"
+			"	STREX	R3, R2, [R0, #4]		\n\t"
+			"	CMP		R3, #1					\n\t"
 			"	IT		EQ						\n\t"
 			"	BEQ		1b						\n\t"
 			".align 4"
-		: : [t] "m" (thread), [e] "r" (event_bits)
-	);
+	::: "r2", "r3", "cc");
 
 	return E_OK;
 }
@@ -293,19 +295,33 @@ uint32_t thread_wait_event_syscall_handler(uint32_t *args)
 	struct thread_t *thread = active_thread;
 	unsigned int event_mask = args[0];
 
-	if ((thread->event_flags & event_mask) == event_mask) {
-		return E_OK;
-	}
+//	if ((thread->event_flags & event_mask) == event_mask) {
+//
+//		//
+//		// clear the awaited event bits from the event
+//		// register with LDREX/STREX to make sure we don't
+//		// clear bits set for other events in ISRs
+//		//
+//		__asm__ __volatile__(
+//				"	LDR		R1, %[t]				\n\t"
+//				"1:	LDREX	R2, [R1, #4]			\n\t"
+//				"	BIC		R2, R2, R3				\n\t"
+//				"	STREX	R3, R2, [R1, #4]		\n\t"
+//				"	CMP		R3, #1					\n\t"
+//				"	IT		EQ						\n\t"
+//				"	BEQ		1b						\n\t"
+//				".align 4"
+//			: : [t] "m" (thread), [e] "r" (thread->event_wait_mask)
+//		);
+//
+//		return E_OK;
+//	}
 
 	thread->state = STATE_WAITING;
 	thread->wait_condition = WAIT_EVENT;
 	thread->event_wait_mask = event_mask;
 	thread_yield_syscall_handler(NULL);
-}
 
-int thread_notify_from_isr(struct thread_t *thread, uint32_t event_bits)
-{
-	thread->event_flags |= event_bits;
 	return E_OK;
 }
 

@@ -39,11 +39,13 @@
 
 TestThread testThread1(GPIO_PIN_13, 50);
 TestThread testThread2(GPIO_PIN_14, 60);
+NotifierThread testThread3(&testThread1);
 
 void test_thread_1_main()
 {
 	testThread1.start();
 	testThread2.start();
+	testThread3.start();
 }
 
 TestThread::TestThread(unsigned int gpio, unsigned int sleep) : Thread()
@@ -63,8 +65,30 @@ void TestThread::run()
 
 	while (1)
     {
+		waitForEvent(0xBEEF);
 		HAL_GPIO_WritePin(GPIOG, m_gpio, i);
 		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
-		sleep(m_sleep);
     }
+}
+
+NotifierThread::NotifierThread(TestThread *target)
+{
+	m_target = target;
+}
+
+NotifierThread::~NotifierThread()
+{
+
+}
+
+void NotifierThread::run()
+{
+	GPIO_PinState i = GPIO_PIN_SET;
+
+	while (1) {
+		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, i);
+		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
+		sleep(1000);
+		m_target->notify(0xBEEF);
+	}
 }

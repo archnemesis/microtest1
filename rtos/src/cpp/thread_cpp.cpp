@@ -78,3 +78,8 @@ void Thread::waitForEvent(uint32_t event_mask)
 {
 	thread_wait_event(event_mask);
 }
+
+void Thread::notify(uint32_t event_mask)
+{
+	thread_notify(&this->m_thread, event_mask);
+}

@@ -59,6 +59,16 @@ protected:
 	unsigned int m_sleep;
 };
 
+class NotifierThread : public Thread
+{
+public:
+	NotifierThread(TestThread *target);
+	virtual ~NotifierThread();
+protected:
+	virtual void run();
+	TestThread *m_target;
+};
+
 #endif
 
 #endif /* INCLUDE_TEST_THREAD_1_H_ */
