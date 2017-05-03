@@ -179,6 +179,13 @@ uint32_t thread_tick()
 				break;
 			case STATE_WAITING:
 				switch (thread->wait_condition) {
+					case WAIT_MEMORY:
+					{
+						//
+						// waiting on a DMA transfer...
+						//
+						break;
+					}
 					case WAIT_MUTEX:
 					{
 						//
@@ -222,7 +229,10 @@ uint32_t thread_tick()
 									".align 4"
 								: : [t] "m" (thread), [e] "r" (thread->event_wait_mask) : "r0", "r2", "r3"
 							);
-							//thread->event_flags &= ~thread->event_wait_mask;
+
+							//
+							// clear the wait mask
+							//
 							thread->event_wait_mask = 0;
 
 							if (thread->running_priority > highest_priority) {
