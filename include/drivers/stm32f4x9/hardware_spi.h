@@ -1,5 +1,5 @@
 /**
- * microtest1
+ * PDCL_OS
  * ----------------------------------------
  *
  * MIT License
@@ -26,31 +26,19 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/PDCL_OS/include/hardware/stm32f4xx/hardware_spi.h/hardware_spi.h
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	Feb 1, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
+#ifndef INCLUDE_HARDWARE_STM32F4XX_HARDWARE_SPI_H_
+#define INCLUDE_HARDWARE_STM32F4XX_HARDWARE_SPI_H_
+
+#include <stdint.h>
+
+void HW_SPI_Init();
+void HW_SPI_DeInit();
+void HW_SPI_Send(uint8_t data);
 
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
-
-class VLayout : public Widget
-{
-public:
-	VLayout();
-
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
-
-protected:
-	List<Widget*> m_widgets;
-};
-
-
-#endif /* INCLUDE_VLAYOUT_H_ */
+#endif /* INCLUDE_HARDWARE_STM32F4XX_HARDWARE_SPI_H_ */

@@ -26,31 +26,22 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/microtest1/rtos/src/cpp/new.cpp/new.cpp
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	May 4, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
 
+#include <stdlib.h>
+#include "heap.h"
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
-
-class VLayout : public Widget
+void *operator new(size_t size)
 {
-public:
-	VLayout();
+	void *p = heap_malloc(size);
+	return p;
+}
 
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
-
-protected:
-	List<Widget*> m_widgets;
-};
-
-
-#endif /* INCLUDE_VLAYOUT_H_ */
+void operator delete(void *ptr) noexcept
+{
+	heap_free(ptr);
+}

@@ -26,31 +26,37 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/microtest1/rtosgraphics/include/color.h/color.h
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	May 4, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
+#ifndef INCLUDE_COLOR_H_
+#define INCLUDE_COLOR_H_
 
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
-
-class VLayout : public Widget
-{
+class Color {
 public:
-	VLayout();
-
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
-
+	Color();
+	Color(unsigned int red, unsigned int green, unsigned int blue, unsigned int alpha);
+	Color(unsigned int argb);
+	unsigned int red() const;
+	unsigned int green() const;
+	unsigned int blue() const;
+	unsigned int alpha() const;
+	void setRed(unsigned int red);
+	void setGreen(unsigned int green);
+	void setBlue(unsigned int blue);
+	void setAlpha(unsigned int alpha);
+	Color blendWith(Color& color2) const;
+	unsigned int toInt() const;
 protected:
-	List<Widget*> m_widgets;
+	unsigned int m_red;
+	unsigned int m_green;
+	unsigned int m_blue;
+	unsigned int m_alpha;
+	unsigned int m_argb;
 };
 
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+#endif /* INCLUDE_COLOR_H_ */

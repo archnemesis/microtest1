@@ -26,31 +26,71 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/microtest1/rtosgraphics/src/widget.cpp/widget.cpp
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	May 4, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
 
-
-#include "list.h"
 #include "widget.h"
-#include "canvas.h"
 
-class VLayout : public Widget
+Widget::Widget() :
+		m_x(0),
+		m_y(0),
+		m_width(0),
+		m_height(0),
+		m_vSizePolicy(ExpandingSizePolicy),
+		m_hSizePolicy(ExpandingSizePolicy)
 {
-public:
-	VLayout();
 
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
+}
 
-protected:
-	List<Widget*> m_widgets;
-};
+void Widget::setX(int x)
+{
+	m_x = x;
+}
 
+void Widget::setY(int y)
+{
+	m_y = y;
+}
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+void Widget::setWidth(int width)
+{
+	m_width = width;
+}
+
+void Widget::setHeight(int height)
+{
+	m_height = height;
+}
+
+int Widget::x() const
+{
+	return m_x;
+}
+
+int Widget::y() const
+{
+	return m_y;
+}
+
+int Widget::width() const
+{
+	return m_width;
+}
+
+int Widget::height() const
+{
+	return m_height;
+}
+
+int Widget::widthHint() const
+{
+	return -1;
+}
+
+int Widget::heightHint() const
+{
+	return -1;
+}

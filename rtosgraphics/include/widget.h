@@ -26,31 +26,54 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/microtest1/rtosgraphics/include/widget.h/widget.h
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	May 3, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
+#ifndef INCLUDE_WIDGET_H_
+#define INCLUDE_WIDGET_H_
 
-
-#include "list.h"
-#include "widget.h"
 #include "canvas.h"
 
-class VLayout : public Widget
-{
+class Widget {
 public:
-	VLayout();
+	enum SizePolicy {
+		MinimumSizePolicy,
+		ExpandingSizePolicy,
+		FixedSizePolicy,
+		PreferredSizePolicy
+	};
 
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
+	Widget();
+	virtual ~Widget();
+
+	void setX(int x);
+	void setY(int y);
+	void setWidth(int width);
+	void setHeight(int height);
+	void setVerticalSizePolicy(SizePolicy policy);
+	void setHorizontalSizePolicy(SizePolicy policy);
+
+	int x() const;
+	int y() const;
+	int width() const;
+	int height() const;
+	int widthHint() const;
+	int heightHint() const;
+	SizePolicy horizontalSizePolicy() const;
+	SizePolicy verticalSizePolicy() const;
+
+	virtual void draw(Canvas& canvas) = 0;
 
 protected:
-	List<Widget*> m_widgets;
+	int m_x;
+	int m_y;
+	int m_width;
+	int m_height;
+	SizePolicy m_vSizePolicy;
+	SizePolicy m_hSizePolicy;
 };
 
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+#endif /* INCLUDE_WIDGET_H_ */

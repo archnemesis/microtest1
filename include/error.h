@@ -26,49 +26,16 @@
  */
 
 /**
- * @file	/microtest1/include/test_thread_1.h/test_thread_1.h
+ * @file	/microtest1/include/error.h/error.h
  * @author	robin
- * @date	Apr 29, 2017
+ * @date	May 4, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_TEST_THREAD_1_H_
-#define INCLUDE_TEST_THREAD_1_H_
+#ifndef INCLUDE_ERROR_H_
+#define INCLUDE_ERROR_H_
 
-#include <thread.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void Error_Handler(void);
 
-void test_thread_1_main();
 
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef __cplusplus
-
-class TestThread : public Thread
-{
-public:
-	TestThread(unsigned int gpio, unsigned int sleep);
-	virtual ~TestThread();
-protected:
-	virtual void run();
-	unsigned int m_gpio;
-	unsigned int m_sleep;
-};
-
-class NotifierThread : public Thread
-{
-public:
-	NotifierThread(TestThread *target);
-	virtual ~NotifierThread();
-protected:
-	virtual void run();
-	TestThread *m_target;
-};
-
-#endif
-
-#endif /* INCLUDE_TEST_THREAD_1_H_ */
+#endif /* INCLUDE_ERROR_H_ */

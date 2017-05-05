@@ -34,8 +34,37 @@
 #ifndef INCLUDE_LABEL_H_
 #define INCLUDE_LABEL_H_
 
+#include <string>
+#include "widget.h"
+#include "font.h"
+#include "color.h"
+#include "canvas.h"
 
+class Label : public Widget
+{
+public:
+	enum TextAlignment {
+		TextAlignLeft,
+		TextAlignRight,
+		TextAlignCenter
+	};
 
+	Label();
+	Label(const char *labelText);
+
+	void setText(std::string const& text);
+	void setText(const char *text);
+	void setFont(Font& font);
+	void setColor(const Color& color);
+	void setAlignment(TextAlignment align);
+	void draw(Canvas& canvas);
+
+protected:
+	std::string m_text;
+	Font m_font;
+	Color m_color;
+	TextAlignment m_align;
+};
 
 
 #endif /* INCLUDE_LABEL_H_ */

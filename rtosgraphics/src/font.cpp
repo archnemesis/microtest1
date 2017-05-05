@@ -1,5 +1,5 @@
 /**
- * microtest1
+ * PDCL_OS
  * ----------------------------------------
  *
  * MIT License
@@ -26,31 +26,58 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/PDCL_OS/src/gfx/font.cpp/font.cpp
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	Feb 3, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
 
+#include "font.h"
+#include <string.h>
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
-
-class VLayout : public Widget
+Font::Font() :
+		m_font(0),
+		m_scale(1.0)
 {
-public:
-	VLayout();
 
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
+}
 
-protected:
-	List<Widget*> m_widgets;
-};
+Font::Font(const char *fontName) :
+		m_font(0),
+		m_scale(1.0)
+{
+	setFont(fontName);
+}
 
+void Font::setFont(const char *fontName)
+{
+	strcpy(m_fontName, fontName);
+	const struct mf_font_s *font = mf_find_font(fontName);
+	if (!font) {
+		// TODO: error handler called here
+	}
+	m_font = font;
+}
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+void Font::setScaling(float scale)
+{
+	m_scale = scale;
+}
+
+int Font::stringWidth(const char *string)
+{
+	int i;
+	int l = strlen(string);
+	int w = 0;
+
+	for (i = 0; i < l; i++) {
+		w += mf_character_width(m_font, string[i]);
+	}
+
+	return w;
+}
+
+int Font::stringHeight()
+{
+	return m_font->height;
+}

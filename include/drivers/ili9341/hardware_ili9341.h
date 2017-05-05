@@ -1,5 +1,5 @@
 /**
- * microtest1
+ * PDCL_OS
  * ----------------------------------------
  *
  * MIT License
@@ -26,31 +26,16 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/PDCL_OS/include/hardware/ili9341/hardware_ili9341.h/hardware_ili9341.h
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	Feb 1, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
+#ifndef INCLUDE_HARDWARE_ILI9341_HARDWARE_ILI9341_H_
+#define INCLUDE_HARDWARE_ILI9341_HARDWARE_ILI9341_H_
 
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
-
-class VLayout : public Widget
-{
-public:
-	VLayout();
-
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
-
-protected:
-	List<Widget*> m_widgets;
-};
+void HW_ILI9341_Init();
 
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+#endif /* INCLUDE_HARDWARE_ILI9341_HARDWARE_ILI9341_H_ */

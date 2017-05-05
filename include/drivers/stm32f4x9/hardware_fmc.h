@@ -1,5 +1,5 @@
 /**
- * microtest1
+ * PDCL_OS
  * ----------------------------------------
  *
  * MIT License
@@ -26,31 +26,18 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	hardware_fmc.h
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	Jan 31, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
 
+#ifndef HARDWARE_STM32F4XX_FMC_H
+#define HARDWARE_STM32F4XX_FMC_H
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
+void HW_FMC_GPIO_Init();
+void HW_FMC_GPIO_DeInit();
+void HW_FMC_Init();
+void HW_FMC_DeInit();
 
-class VLayout : public Widget
-{
-public:
-	VLayout();
-
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
-
-protected:
-	List<Widget*> m_widgets;
-};
-
-
-#endif /* INCLUDE_VLAYOUT_H_ */
+#endif

@@ -34,8 +34,47 @@
 #ifndef INCLUDE_CANVAS_H_
 #define INCLUDE_CANVAS_H_
 
+#include <stdint.h>
 
+#include "color.h"
+#include "font.h"
 
+class Canvas {
+public:
+	Canvas(int width, int height);
+	Canvas(uint32_t *framebuffer, int width, int height);
+	~Canvas();
+
+	void setFramebufferAddress(uint32_t *framebuffer);
+	void clear();
+	void setColor(Color& color);
+	void setFont(Font& font);
+	void drawPixel(int x, int y);
+	void putPixel(int x, int y, uint32_t pixeldata);
+	void drawLine(int x1, int y1, int x2, int y2, int width);
+	void drawRect(int x, int y, int width, int height);
+	void drawFilledRect(int x, int y, int width, int height);
+	void drawText(int x, int y, const char *text);
+	void blit(Canvas& dest, int destX, int destY, int destWidth, int destHeight);
+
+	uint32_t getPixel(int x, int y);
+	int width() const { return m_width; }
+	int height() const { return m_height; }
+	Color &getColor();
+
+	friend void _drawText_fontPixelCallback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *state);
+
+protected:
+	volatile uint32_t *m_framebuffer;
+	int m_my_framebuffer;
+	int m_width;
+	int m_height;
+	Font m_drawingFont;
+	Color m_drawingColor;
+
+	int m_drawText_charX;
+	int m_drawText_charY;
+};
 
 
 #endif /* INCLUDE_CANVAS_H_ */

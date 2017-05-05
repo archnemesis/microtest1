@@ -26,31 +26,22 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/microtest1/rtos/include/object.h/object.h
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	May 4, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
+#ifndef INCLUDE_OBJECT_H_
+#define INCLUDE_OBJECT_H_
 
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
-
-class VLayout : public Widget
+class Object
 {
 public:
-	VLayout();
-
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
-
-protected:
-	List<Widget*> m_widgets;
+	Object();
+	virtual ~Object();
+	void *operator new(std::size_t count);
 };
 
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+#endif /* INCLUDE_OBJECT_H_ */

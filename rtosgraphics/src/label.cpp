@@ -26,31 +26,73 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/microtest1/rtosgraphics/src/label.cpp/label.cpp
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	May 4, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
 
+#include <string.h>
+#include "label.h"
+#include "heap.h"
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
-
-class VLayout : public Widget
+Label::Label() :
+		m_align(TextAlignLeft)
 {
-public:
-	VLayout();
 
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
+}
 
-protected:
-	List<Widget*> m_widgets;
-};
+Label::Label(const char *labelText) :
+		m_align(TextAlignLeft),
+		m_text(labelText)
+{
 
+}
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+void Label::setText(std::string const& text)
+{
+	m_text = text;
+}
+
+void Label::setText(const char *text)
+{
+	m_text = text;
+}
+
+void Label::draw(Canvas& canvas)
+{
+	int text_width = m_font.stringWidth(m_text.c_str());
+	int text_height = m_font.stringHeight();
+	int text_y = (height() - text_height) / 2;
+	int text_x = x();
+
+	switch (m_align) {
+	case TextAlignLeft:
+		break;
+	case TextAlignRight:
+		text_x = width() - text_width;
+		break;
+	case TextAlignCenter:
+		text_x = (width() - text_width) / 2;
+		break;
+	}
+
+	canvas.setFont(m_font);
+	canvas.setColor(m_color);
+	canvas.drawText(x() + text_x, y() + text_y, m_text.c_str());
+}
+
+void Label::setFont(Font& font)
+{
+	m_font = font;
+}
+
+void Label::setColor(const Color& color)
+{
+	m_color = color;
+}
+
+void Label::setAlignment(TextAlignment align)
+{
+	m_align = align;
+}

@@ -357,6 +357,14 @@ SECTIONS
     } >FLASHB1
     
     /*
+     * The external SRAM is used for framebuffers and RTOS heap.
+     */
+    .sram_data : ALIGN(4)
+    {
+        *(.sram_data)
+    } >SRAM
+    
+    /*
      * The EXTMEM.
      * The C or assembly source must explicitly place the code or data there
      * using the "section" attribute.

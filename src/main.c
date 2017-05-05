@@ -8,35 +8,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef DEBUG
 #include "diag/Trace.h"
+#endif
+
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_rcc.h"
 #include "stm32f4xx_hal_gpio.h"
 
+#include "hardware_gpio.h"
+#include "hardware_fmc.h"
+#include "hardware_spi.h"
+#include "hardware_ltdc.h"
+#include "hardware_ili9341.h"
+
 #include "micrortos.h"
 #include "thread.h"
-#include "mutex.h"
-#include "ringbuffer.h"
-#include "test_thread_1.h"
-
-static struct mutex_t test_mutex;
-static struct ringbuffer_t test_buffer;
-
-// ----------------------------------------------------------------------------
-//
-// Standalone STM32F4 empty sample (trace via DEBUG).
-//
-// Trace support is enabled by adding the TRACE macro definition.
-// By default the trace messages are forwarded to the DEBUG output,
-// but can be rerouted to any device or completely suppressed, by
-// changing the definitions required in system/src/diag/trace_impl.c
-// (currently OS_USE_TRACE_ITM, OS_USE_TRACE_SEMIHOSTING_DEBUG/_STDOUT).
-//
+#include "error.h"
+#include "application.h"
 
 // ----- main() ---------------------------------------------------------------
 
-// Sample pragmas to cope with warnings. Please note the related line at
-// the end of this function, used to pop the compiler diagnostics status.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
@@ -45,23 +38,13 @@ static struct ringbuffer_t test_buffer;
 int
 main(int argc, char* argv[])
 {
-	__HAL_RCC_GPIOG_CLK_ENABLE();
-
-	GPIO_InitTypeDef GPIO_InitStruct;
-
-	//
-	// Green (G13) and Red (G14)
-	//
-	GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+	HW_GPIO_Init();
+	HW_FMC_Init();
+	HW_SPI_Init();
+	HW_LTDC_Init();
+	HW_ILI9341_Init();
 
 	test_thread_1_main();
-
-	ringbuffer_init(&test_buffer, 1024);
-
 	thread_start_scheduler();
 
 	GPIO_PinState i = GPIO_PIN_RESET;
@@ -72,6 +55,21 @@ main(int argc, char* argv[])
        i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
        HAL_Delay(100);
     }
+}
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @param  None
+  * @retval None
+  */
+void Error_Handler(void)
+{
+	trace_printf("Error caught!\n");
+
+	while(1)
+	{
+
+	}
 }
 
 #pragma GCC diagnostic pop

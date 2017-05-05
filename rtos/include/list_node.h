@@ -26,31 +26,28 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/microtest1/rtos/include/list_node.h/list_node.h
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	May 4, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
+#ifndef INCLUDE_LIST_NODE_H_
+#define INCLUDE_LIST_NODE_H_
 
+template <typename T> class List;
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
-
-class VLayout : public Widget
+template <typename T> class ListNode
 {
+	friend class List<T>;
+
 public:
-	VLayout();
+	ListNode(T);
+	T data();
 
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
-
-protected:
-	List<Widget*> m_widgets;
+private:
+	T m_data;
+	ListNode *m_next;
 };
 
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+#endif /* INCLUDE_LIST_NODE_H_ */

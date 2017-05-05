@@ -26,31 +26,50 @@
  */
 
 /**
- * @file	/microtest1/rtosgraphics/include/vlayout.h/vlayout.h
+ * @file	/microtest1/include/test_thread_1.h/test_thread_1.h
  * @author	robin
- * @date	Apr 30, 2017
+ * @date	Apr 29, 2017
  * @brief	[DESCRIPTION]
  */
-#ifndef INCLUDE_VLAYOUT_H_
-#define INCLUDE_VLAYOUT_H_
+#ifndef INCLUDE_TEST_THREAD_1_H_
+#define INCLUDE_TEST_THREAD_1_H_
 
+#include <thread.h>
 
-#include "list.h"
-#include "widget.h"
-#include "canvas.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class VLayout : public Widget
+void test_thread_1_main();
+void application_init();
+
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+
+class TestThread : public Thread
 {
 public:
-	VLayout();
-
-	void addWidget(Widget *widget);
-	void removeWidget(Widget *widget);
-	void draw(Canvas& canvas);
-
+	TestThread(unsigned int gpio, unsigned int sleep);
+	virtual ~TestThread();
 protected:
-	List<Widget*> m_widgets;
+	virtual void run();
+	unsigned int m_gpio;
+	unsigned int m_sleep;
 };
 
+class NotifierThread : public Thread
+{
+public:
+	NotifierThread(TestThread *target);
+	virtual ~NotifierThread();
+protected:
+	virtual void run();
+	TestThread *m_target;
+};
 
-#endif /* INCLUDE_VLAYOUT_H_ */
+#endif
+
+#endif /* INCLUDE_TEST_THREAD_1_H_ */

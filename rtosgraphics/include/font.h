@@ -34,8 +34,27 @@
 #ifndef INCLUDE_FONT_H_
 #define INCLUDE_FONT_H_
 
+#include "mcufont.h"
+#include "mf_font.h"
 
+class Canvas;
 
+class Font {
+	friend class Canvas;
+public:
+	Font();
+	Font(const char *fontName);
+
+	void setFont(const char *fontName);
+	void setScaling(float scale);
+	int stringWidth(const char *string);
+	int stringHeight();
+
+protected:
+	char m_fontName[16];
+	const struct mf_font_s *m_font;
+	float m_scale;
+};
 
 
 #endif /* INCLUDE_FONT_H_ */
