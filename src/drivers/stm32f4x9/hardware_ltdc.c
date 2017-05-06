@@ -189,7 +189,7 @@ void HW_LTDC_Init()
     }
 }
 
-void HW_LTDC_SetFramebuffer(uint32_t *fb)
+void HW_LTDC_SetFramebuffer(volatile uint32_t *fb)
 {
 	HAL_LTDC_SetAddress(&hltdc, (uint32_t)fb, 0);
 }

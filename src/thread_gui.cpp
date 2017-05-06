@@ -37,6 +37,7 @@
 #define FRAMEBUFFER_WIDTH	240
 #define FRAMEBUFFER_HEIGHT	320
 
+#include "stm32f4xx.h"
 #include "hardware_ltdc.h"
 #include "thread_gui.h"
 #include "label.h"
@@ -46,19 +47,23 @@
 
 uint32_t _framebuffer_1[FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT] __attribute__ ((section (".sram_data")));
 uint32_t _framebuffer_2[FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT] __attribute__ ((section (".sram_data")));
-uint32_t *framebuffer;
+volatile uint32_t *framebuffer;
 
 GuiThread::GuiThread() :
+		Thread(100),
 		m_canvas(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT)
 {
 	m_canvas.setFramebufferAddress((uint32_t *)&_framebuffer_2[0]);
-	HW_LTDC_SetFramebuffer((uint32_t *)&_framebuffer_1[0]);
+
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 3, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 	mutex_init(&m_refreshMutex);
 	framebuffer = (uint32_t *)&_framebuffer_1[0];
 
 	m_testLabel = new Label();
 	m_testLabel->setText("Test Label!");
+	m_testLabel->setColor(Color(0,0,0,255));
 
 	m_testView = new View();
 	m_testView->setBackgroundColor(Color(255,255,255,255));
@@ -104,7 +109,7 @@ void GuiThread::run()
 		//
 		// rotate the framebuffers
 		//
-		m_canvas.setFramebufferAddress(framebuffer);
+		m_canvas.setFramebufferAddress((uint32_t *)framebuffer);
 		if (framebuffer == (uint32_t *)&_framebuffer_1[0]) {
 			framebuffer = (uint32_t *)&_framebuffer_2[0];
 		}
@@ -131,7 +136,13 @@ void GuiThread::popView()
 }
 
 bool GuiThread::takeRefreshMutex() {
+	static GPIO_PinState i = GPIO_PIN_RESET;
+
 	if (mutex_lock_nonblocking(&m_refreshMutex) == E_OK) {
+		HW_LTDC_SetFramebuffer(framebuffer);
+
+		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, i);
+		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
 		return true;
 	}
 	return false;

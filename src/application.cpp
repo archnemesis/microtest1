@@ -35,7 +35,7 @@
 #include <application.h>
 #include <string.h>
 #include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_rcc.h"
+#include "stm32f4xx_hal_ltdc.h"
 #include "stm32f4xx_hal_gpio.h"
 #include "stm32f4xx_hal_dma2d.h"
 #include "hardware_ltdc.h"
@@ -47,4 +47,11 @@ GuiThread guiThread;
 void application_init()
 {
 	guiThread.start();
+}
+
+extern "C" void EXTI15_10_IRQHandler(void)
+{
+	guiThread.takeRefreshMutex();
+
+	EXTI->PR |= EXTI_PR_PR11;
 }

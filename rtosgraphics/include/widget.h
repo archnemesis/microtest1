@@ -65,7 +65,7 @@ public:
 	SizePolicy horizontalSizePolicy() const;
 	SizePolicy verticalSizePolicy() const;
 
-	void draw(Canvas& canvas);
+	virtual void draw(Canvas& canvas);
 
 	Signal0<void> clicked;
 

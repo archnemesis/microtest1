@@ -42,7 +42,7 @@ extern "C" {
 
 void HW_LTDC_Init();
 void HW_LTDC_GPIO_Init();
-void HW_LTDC_SetFramebuffer(uint32_t *fb);
+void HW_LTDC_SetFramebuffer(volatile uint32_t *fb);
 
 #ifdef __cplusplus
 }
