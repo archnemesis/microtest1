@@ -45,6 +45,7 @@ public:
 	View();
 
 	void draw(Canvas& canvas);
+	int exec();
 	const Color& backgroundColor() const;
 	Widget* mainWidget();
 	int marginBottom() const;
@@ -81,13 +82,13 @@ protected:
 	Color m_titleSeparatorColor;
 	Font  m_titleFont;
 
-	int   m_titleSeparatorWidth;
-	char  m_title[32];
-
-	int m_marginLeft;
-	int m_marginRight;
 	int m_marginTop;
 	int m_marginBottom;
+	int m_marginLeft;
+	int m_marginRight;
+
+	int   m_titleSeparatorWidth;
+	char  m_title[32];
 };
 
 

@@ -44,7 +44,8 @@ View::View() :
 		m_marginBottom(0),
 		m_marginLeft(0),
 		m_marginRight(0),
-		m_titleSeparatorWidth(1)
+		m_titleSeparatorWidth(1),
+		m_mainWidget(0)
 {
 	m_mainWidget = 0;
 	m_title[0] = 0;
@@ -189,4 +190,9 @@ const Font& View::titleFont() const
 void View::setTitleFont(const Font& font)
 {
 	m_titleFont = font;
+}
+
+int View::exec()
+{
+
 }

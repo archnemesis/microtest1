@@ -46,7 +46,7 @@ public:
 	};
 
 	Widget();
-	virtual ~Widget();
+	~Widget();
 
 	void setX(int x);
 	void setY(int y);
@@ -64,7 +64,7 @@ public:
 	SizePolicy horizontalSizePolicy() const;
 	SizePolicy verticalSizePolicy() const;
 
-	virtual void draw(Canvas& canvas) = 0;
+	void draw(Canvas& canvas);
 
 protected:
 	int m_x;

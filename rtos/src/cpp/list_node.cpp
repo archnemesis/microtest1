@@ -33,16 +33,3 @@
  */
 
 #include "list_node.h"
-
-template <typename T>
-ListNode<T>::ListNode(T data)
-{
-	m_data = data;
-	m_next = 0;
-}
-
-template <typename T>
-T ListNode<T>::data()
-{
-	return data;
-}

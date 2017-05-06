@@ -34,8 +34,90 @@
 #ifndef THREAD_GUI_CPP_
 #define THREAD_GUI_CPP_
 
+#define FRAMEBUFFER_WIDTH	240
+#define FRAMEBUFFER_HEIGHT	320
 
+#include "thread_gui.h"
+#include "label.h"
+#include "view.h"
+#include "canvas.h"
+#include "list.h"
 
+uint32_t _framebuffer_1[FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT] __attribute__ ((section (".sram_data")));
+uint32_t _framebuffer_2[FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT] __attribute__ ((section (".sram_data")));
+uint32_t *framebuffer;
 
+GuiThread::GuiThread() :
+		m_canvas(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT)
+{
+	m_canvas.setFramebufferAddress((uint32_t *)&_framebuffer_2[0]);
+
+	mutex_init(&m_refreshMutex);
+	framebuffer = (uint32_t *)&_framebuffer_1[0];
+
+	m_testLabel = new Label();
+	m_testLabel->setText("Test Label!");
+
+	m_testView = new View();
+	m_testView->setWidth(FRAMEBUFFER_WIDTH);
+	m_testView->setHeight(FRAMEBUFFER_HEIGHT);
+	m_testView->setMainWidget(m_testLabel);
+
+	pushView(m_testView);
+}
+
+GuiThread::~GuiThread()
+{
+
+}
+
+void GuiThread::run()
+{
+	View *activeView;
+
+	while (1) {
+		if (m_viewStack.at(0) != activeView) {
+			//
+			// make a transition
+			//
+			activeView = m_viewStack.at(0);
+		}
+
+		//
+		// draw the active view
+		//
+		activeView->draw(m_canvas);
+
+		//
+		// rotate the framebuffers
+		//
+		m_canvas.setFramebufferAddress(framebuffer);
+		if (framebuffer == (uint32_t *)&_framebuffer_1[0]) {
+			framebuffer = (uint32_t *)&_framebuffer_2[0];
+		}
+		else {
+			framebuffer = (uint32_t *)&_framebuffer_1[0];
+		}
+
+		//
+		// signal the interrupt that it's safe to swap the buffers
+		// at the next sync
+		//
+		mutex_unlock(&m_refreshMutex);
+	}
+}
+
+void GuiThread::pushView(View *view)
+{
+	m_viewStack.insert(0, view);
+}
+
+void GuiThread::popView(View *view)
+{
+	m_viewStack.remove(0);
+}
+
+bool GuiThread::takeRefreshMutex() {
+}
 
 #endif /* THREAD_GUI_CPP_ */

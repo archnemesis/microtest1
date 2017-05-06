@@ -40,36 +40,10 @@
 extern "C" {
 #endif
 
-void test_thread_1_main();
 void application_init();
 
 #ifdef __cplusplus
 }
-#endif
-
-#ifdef __cplusplus
-
-class TestThread : public Thread
-{
-public:
-	TestThread(unsigned int gpio, unsigned int sleep);
-	virtual ~TestThread();
-protected:
-	virtual void run();
-	unsigned int m_gpio;
-	unsigned int m_sleep;
-};
-
-class NotifierThread : public Thread
-{
-public:
-	NotifierThread(TestThread *target);
-	virtual ~NotifierThread();
-protected:
-	virtual void run();
-	TestThread *m_target;
-};
-
 #endif
 
 #endif /* INCLUDE_TEST_THREAD_1_H_ */

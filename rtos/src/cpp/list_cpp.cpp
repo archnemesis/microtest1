@@ -1,5 +1,5 @@
 /**
- * PDCL_OS
+ * microtest1
  * ----------------------------------------
  *
  * MIT License
@@ -26,58 +26,12 @@
  */
 
 /**
- * @file	/PDCL_OS/src/gfx/font.cpp/font.cpp
+ * @file	/microtest1/rtos/src/cpp/list_t.cpp/list_t.cpp
  * @author	robin
- * @date	Feb 3, 2017
+ * @date	May 4, 2017
  * @brief	[DESCRIPTION]
  */
 
-#include "font.h"
-#include <string.h>
+#include "list.h"
 
-Font::Font() :
-		m_font(0),
-		m_scale(1.0)
-{
-	setFont("Ubuntu Regular 22");
-}
 
-Font::Font(const char *fontName) :
-		m_font(0),
-		m_scale(1.0)
-{
-	setFont(fontName);
-}
-
-void Font::setFont(const char *fontName)
-{
-	strcpy(m_fontName, fontName);
-	const struct mf_font_s *font = mf_find_font(fontName);
-	if (!font) {
-		// TODO: error handler called here
-	}
-	m_font = font;
-}
-
-void Font::setScaling(float scale)
-{
-	m_scale = scale;
-}
-
-int Font::stringWidth(const char *string)
-{
-	int i;
-	int l = strlen(string);
-	int w = 0;
-
-	for (i = 0; i < l; i++) {
-		w += mf_character_width(m_font, string[i]);
-	}
-
-	return w;
-}
-
-int Font::stringHeight()
-{
-	return m_font->height;
-}

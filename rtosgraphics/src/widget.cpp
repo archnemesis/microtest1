@@ -45,6 +45,16 @@ Widget::Widget() :
 
 }
 
+Widget::~Widget()
+{
+
+}
+
+void Widget::draw(Canvas &canvas)
+{
+
+}
+
 void Widget::setX(int x)
 {
 	m_x = x;

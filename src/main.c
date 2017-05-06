@@ -44,7 +44,7 @@ main(int argc, char* argv[])
 	HW_LTDC_Init();
 	HW_ILI9341_Init();
 
-	test_thread_1_main();
+	application_init();
 	thread_start_scheduler();
 
 	GPIO_PinState i = GPIO_PIN_RESET;

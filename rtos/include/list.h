@@ -36,7 +36,7 @@
 
 #include "list_node.h"
 
-template <typename T>
+template<class T>
 class List {
 public:
 	List();
@@ -45,14 +45,170 @@ public:
 	bool isEmpty();
 	unsigned int length();
 	unsigned int size() { return length(); }
+	void insert(int index, T data);
 	void append(T data);
 	void remove(T data);
+	void remove(int index);
 	T at(int index);
 
-private:
+protected:
 	ListNode<T> *m_head;
 	ListNode<T> *m_tail;
 };
 
+template <class T>
+List<T>::List()
+{
+	m_head = 0;
+	m_tail = 0;
+}
+
+template <class T>
+List<T>::~List()
+{
+	if (!isEmpty()) {
+		ListNode<T> *current = m_head;
+		ListNode<T> *temp = 0;
+
+		while (current != 0) {
+			temp = current;
+			current = current->m_next;
+			delete temp;
+		}
+	}
+}
+
+template <class T>
+bool List<T>::isEmpty()
+{
+	return (m_head == 0 && m_tail == 0);
+}
+
+template <class T>
+void List<T>::append(T data)
+{
+	if (isEmpty()) {
+		ListNode<T> *ptr = new ListNode<T>(data);
+		m_head = ptr;
+		m_tail = ptr;
+	}
+	else {
+		ListNode<T> *ptr = new ListNode<T>(data);
+		m_tail->m_next = ptr;
+		m_tail = ptr;
+	}
+}
+
+template <class T>
+void List<T>::insert(int index, T data)
+{
+	ListNode<T> *ptr = new ListNode<T>(data);
+
+	if (index == 0) {
+		ptr->m_next = m_head;
+		m_head = ptr;
+	}
+	else {
+		int i = 1;
+		ListNode<T> *tmp = m_head;
+		while (i < index) {
+			tmp = m_head->m_next;
+			i++;
+		}
+		ptr->m_next = tmp->m_next;
+		tmp->m_next = ptr;
+	}
+}
+
+template <class T>
+void List<T>::remove(int index)
+{
+	int i = 0;
+	ListNode<T> *ptr = m_head;
+
+	if (index == 0) {
+		m_head = m_head->m_next;
+		delete ptr;
+	}
+	else {
+		ListNode<T> *tmp;
+		for (i = 1; i < index; i++) {
+			ptr = ptr->m_next;
+		}
+
+		tmp = ptr->m_next;
+		if (ptr->m_next != 0) {
+			//
+			// if there are more items after the one we want to remove
+			//
+			ptr->m_next = ptr->m_next->m_next;
+		}
+		else {
+			//
+			// this was the second-to-last item, now is last
+			//
+			ptr->m_next = 0;
+		}
+
+		delete tmp;
+	}
+}
+
+template <class T>
+void List<T>::remove(T data)
+{
+	if (!isEmpty()) {
+		ListNode<T> *ptr = m_head;
+		ListNode<T> *tmp;
+
+		if (m_head->data() == data) {
+			tmp = m_head;
+			m_head = m_head->m_next;
+			delete tmp;
+			return;
+		}
+
+		while (ptr->m_next != 0) {
+			if (ptr->m_next->data() == data) {
+				tmp = ptr->m_next;
+				ptr->m_next = tmp->m_next;
+				delete tmp;
+				return;
+			}
+			ptr = ptr->m_next;
+		}
+	}
+}
+
+template <class T>
+unsigned int List<T>::length()
+{
+	unsigned int i = 0;
+	ListNode<T> *ptr = m_head;
+
+	while (ptr != 0) {
+		i++;
+		ptr = ptr->m_next;
+	}
+
+	return i;
+}
+
+template <class T>
+T List<T>::at(int index)
+{
+	int i = 0;
+	ListNode<T> *ptr = m_head;
+
+	for (; i < length(); i++) {
+		if (i == index) {
+			return ptr->data();
+		}
+		ptr = ptr->m_next;
+	}
+	//
+	// TODO: call error handler
+	//
+}
 
 #endif /* INCLUDE_LIST_H_ */

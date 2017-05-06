@@ -40,78 +40,11 @@
 #include "stm32f4xx_hal_dma2d.h"
 #include "hardware_ltdc.h"
 
-#define FRAMEBUFFER_WIDTH	240
-#define FRAMEBUFFER_HEIGHT	320
+#include "thread_gui.h"
 
-volatile uint32_t _framebuffer_1[FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT] __attribute__ ((section (".sram_data")));
-volatile uint32_t _framebuffer_2[FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT] __attribute__ ((section (".sram_data")));
-
-TestThread testThread1(GPIO_PIN_13, 50);
-TestThread testThread2(GPIO_PIN_14, 60);
-NotifierThread testThread3(&testThread1);
-
-DMA2D_HandleTypeDef dma2d;
+GuiThread guiThread;
 
 void application_init()
 {
-
-}
-
-void test_thread_1_main()
-{
-	testThread1.start();
-	testThread2.start();
-	testThread3.start();
-}
-
-TestThread::TestThread(unsigned int gpio, unsigned int sleep) : Thread()
-{
-	m_gpio = gpio;
-	m_sleep = sleep;
-}
-
-TestThread::~TestThread()
-{
-
-}
-
-void TestThread::run()
-{
-	GPIO_PinState i = GPIO_PIN_SET;
-	unsigned int x = 0;
-
-	for (; x < (FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT); x++) {
-		_framebuffer_1[x] = 0xFF00FF00;
-	}
-
-	HW_LTDC_SetFramebuffer((uint32_t *)_framebuffer_1);
-
-	while (1)
-    {
-		waitForEvent(0xBEEF);
-		HAL_GPIO_WritePin(GPIOG, m_gpio, i);
-		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
-    }
-}
-
-NotifierThread::NotifierThread(TestThread *target)
-{
-	m_target = target;
-}
-
-NotifierThread::~NotifierThread()
-{
-
-}
-
-void NotifierThread::run()
-{
-	GPIO_PinState i = GPIO_PIN_SET;
-
-	while (1) {
-		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, i);
-		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
-		sleep(1000);
-		m_target->notify(0xBEEF);
-	}
+	guiThread.start();
 }
