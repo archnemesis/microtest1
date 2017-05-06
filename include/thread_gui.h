@@ -51,7 +51,7 @@ public:
 	void run();
 	bool takeRefreshMutex();
 	void pushView(View *view);
-	void popView(View *view);
+	void popView();
 private:
 	Canvas m_canvas;
 	struct mutex_t m_refreshMutex;

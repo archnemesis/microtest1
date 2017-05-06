@@ -70,6 +70,8 @@
 #ifndef _Delegate_H_
 #define _Delegate_H_
 
+#include <string.h>
+
 #if _MSC_VER > 1000
 	#pragma once
 #endif // _MSC_VER > 1000
@@ -160,8 +162,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-
-namespace Gallant {
 
 namespace detail {	// we'll hide the implementation details in a nested namespace.
 
@@ -2129,7 +2129,5 @@ Delegate8<Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, FASTDL
 
  // clean up after ourselves...
 #undef FASTDLGT_RETTYPE
-
-} // namespace
 
 #endif //_DELEGATES_H_

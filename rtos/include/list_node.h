@@ -42,7 +42,7 @@ template <typename T> class ListNode
 
 public:
 	ListNode(T);
-	T data();
+	T data() const;
 
 private:
 	T m_data;
@@ -57,7 +57,7 @@ ListNode<T>::ListNode(T data)
 }
 
 template <typename T>
-T ListNode<T>::data()
+T ListNode<T>::data() const
 {
 	return m_data;
 }

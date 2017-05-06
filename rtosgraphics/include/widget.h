@@ -35,6 +35,7 @@
 #define INCLUDE_WIDGET_H_
 
 #include "canvas.h"
+#include "signal.h"
 
 class Widget {
 public:
@@ -65,6 +66,8 @@ public:
 	SizePolicy verticalSizePolicy() const;
 
 	void draw(Canvas& canvas);
+
+	Signal0<void> clicked;
 
 protected:
 	int m_x;

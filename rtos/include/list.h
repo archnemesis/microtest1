@@ -34,6 +34,7 @@
 #ifndef INCLUDE_LIST_H_
 #define INCLUDE_LIST_H_
 
+#include <iterator>
 #include "list_node.h"
 
 template<class T>
@@ -42,14 +43,66 @@ public:
 	List();
 	~List();
 
-	bool isEmpty();
+	class iterator
+	{
+		friend class ListNode<T>;
+
+		public:
+			typedef iterator self_type;
+			typedef T value_type;
+			typedef T& reference;
+			typedef T* pointer;
+			typedef std::forward_iterator_tag iterator_category;
+			typedef int difference_type;
+			iterator(ListNode<T> *node) : m_node(node) { }
+			self_type operator++() { m_node = m_node->m_next; return *this; }
+			self_type operator++(int junk) { m_node = m_node->next; return *this; }
+			reference operator*() { return m_node->data(); }
+			pointer operator->() { return m_node->data(); }
+			bool operator==(const self_type& rhs) { return m_node->data() == rhs.m_node->data(); }
+			bool operator!=(const self_type& rhs) { return m_node->data() != rhs.m_node->data(); }
+		private:
+			ListNode<T> *m_node;
+	};
+
+	class const_iterator
+	{
+		friend class ListNode<T>;
+
+		public:
+			typedef const_iterator self_type;
+			typedef T value_type;
+			typedef T& reference;
+			typedef T* pointer;
+			typedef std::forward_iterator_tag iterator_category;
+			typedef int difference_type;
+			const_iterator(ListNode<T> *node) : m_node(node) { }
+			self_type operator++() { m_node = m_node->m_next; return *this; }
+			self_type operator++(int junk) { m_node = m_node->m_next; return *this; }
+			const reference operator*() { return m_node->data(); }
+			const pointer operator->() { return m_node->data(); }
+			bool operator==(const self_type& rhs) { return m_node->data() == rhs.m_node->data(); }
+			bool operator!=(const self_type& rhs) { return m_node->data() != rhs.m_node->data(); }
+		private:
+			ListNode<T> *m_node;
+	};
+
+	bool isEmpty() const;
+	bool empty() const { return isEmpty(); }
 	unsigned int length();
 	unsigned int size() { return length(); }
 	void insert(int index, T data);
+	void insert(T data) { insert(0, data); }
 	void append(T data);
 	void remove(T data);
 	void remove(int index);
+	void erase(T data) { remove(data); }
+	void clear();
 	T at(int index);
+	iterator begin() { return iterator(m_head); }
+	iterator end() { return iterator(m_tail); }
+	const_iterator begin() const { return const_iterator(m_head); }
+	const_iterator end() const { return const_iterator(m_tail); }
 
 protected:
 	ListNode<T> *m_head;
@@ -66,6 +119,12 @@ List<T>::List()
 template <class T>
 List<T>::~List()
 {
+	clear();
+}
+
+template <class T>
+void List<T>::clear()
+{
 	if (!isEmpty()) {
 		ListNode<T> *current = m_head;
 		ListNode<T> *temp = 0;
@@ -76,10 +135,13 @@ List<T>::~List()
 			delete temp;
 		}
 	}
+
+	m_head = 0;
+	m_tail = 0;
 }
 
 template <class T>
-bool List<T>::isEmpty()
+bool List<T>::isEmpty() const
 {
 	return (m_head == 0 && m_tail == 0);
 }

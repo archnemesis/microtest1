@@ -65,7 +65,7 @@ void View::draw(Canvas& canvas)
 
 	canvas.setColor(m_titleTextColor);
 	canvas.setFont(m_titleFont);
-	canvas.drawText(5, 2, "PDCL OS");
+	canvas.drawText(5, 2, "view");
 
 	if (m_mainWidget != 0) {
 		int mainWidget_width = width() - (marginLeft() + marginRight());

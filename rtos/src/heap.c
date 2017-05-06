@@ -57,3 +57,13 @@ void heap_free(void *ptr)
 	free(ptr);
 	mutex_unlock(&malloc_mutex);
 }
+
+void __malloc_lock()
+{
+	mutex_lock_wait(&malloc_mutex, 0);
+}
+
+void __malloc_unlock()
+{
+	mutex_unlock(&malloc_mutex);
+}

@@ -37,6 +37,7 @@
 #define FRAMEBUFFER_WIDTH	240
 #define FRAMEBUFFER_HEIGHT	320
 
+#include "hardware_ltdc.h"
 #include "thread_gui.h"
 #include "label.h"
 #include "view.h"
@@ -51,6 +52,7 @@ GuiThread::GuiThread() :
 		m_canvas(FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT)
 {
 	m_canvas.setFramebufferAddress((uint32_t *)&_framebuffer_2[0]);
+	HW_LTDC_SetFramebuffer((uint32_t *)&_framebuffer_1[0]);
 
 	mutex_init(&m_refreshMutex);
 	framebuffer = (uint32_t *)&_framebuffer_1[0];
@@ -59,6 +61,9 @@ GuiThread::GuiThread() :
 	m_testLabel->setText("Test Label!");
 
 	m_testView = new View();
+	m_testView->setBackgroundColor(Color(255,255,255,255));
+	m_testView->setTitleColor(Color(0,0,0,255));
+	m_testView->setTitleTextColor(Color(255,255,255,255));
 	m_testView->setWidth(FRAMEBUFFER_WIDTH);
 	m_testView->setHeight(FRAMEBUFFER_HEIGHT);
 	m_testView->setMainWidget(m_testLabel);
@@ -68,20 +73,28 @@ GuiThread::GuiThread() :
 
 GuiThread::~GuiThread()
 {
-
+	delete m_testView;
+	delete m_testLabel;
 }
 
 void GuiThread::run()
 {
-	View *activeView;
+	View *activeView = 0;
 
 	while (1) {
 		if (m_viewStack.at(0) != activeView) {
 			//
 			// make a transition
 			//
+			if (activeView != 0) {
+				activeView->deactivated();
+			}
+
 			activeView = m_viewStack.at(0);
+			activeView->activated();
 		}
+
+		if (activeView == 0) continue;
 
 		//
 		// draw the active view
@@ -112,12 +125,16 @@ void GuiThread::pushView(View *view)
 	m_viewStack.insert(0, view);
 }
 
-void GuiThread::popView(View *view)
+void GuiThread::popView()
 {
 	m_viewStack.remove(0);
 }
 
 bool GuiThread::takeRefreshMutex() {
+	if (mutex_lock_nonblocking(&m_refreshMutex) == E_OK) {
+		return true;
+	}
+	return false;
 }
 
 #endif /* THREAD_GUI_CPP_ */
