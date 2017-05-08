@@ -42,6 +42,7 @@
 #include "thread_gui.h"
 #include "label.h"
 #include "view.h"
+#include "vlayout.h"
 #include "canvas.h"
 #include "list.h"
 
@@ -61,17 +62,33 @@ GuiThread::GuiThread() :
 	mutex_init(&m_refreshMutex);
 	framebuffer = (uint32_t *)&_framebuffer_1[0];
 
-	m_testLabel = new Label();
-	m_testLabel->setText("Test Label!");
-	m_testLabel->setColor(Color(0,0,0,255));
+	m_testLabel1 = new Label();
+	m_testLabel1->setText("Red Label");
+	m_testLabel1->setColor(Color(255,0,0,255));
+
+	m_testLabel2 = new Label();
+	m_testLabel2->setText("Green Label");
+	m_testLabel2->setColor(Color(0,255,0,255));
+	m_testLabel2->setVerticalSizePolicy(Widget::SizePolicy::ExpandingSizePolicy);
+
+	m_testLabel3 = new Label();
+	m_testLabel3->setText("Blue Label");
+	m_testLabel3->setColor(Color(0,0,255,255));
+
+	m_testLayout = new VLayout();
+	m_testLayout->addWidget(m_testLabel1);
+	m_testLayout->addWidget(m_testLabel2);
+	m_testLayout->addWidget(m_testLabel3);
 
 	m_testView = new View();
 	m_testView->setBackgroundColor(Color(255,255,255,255));
 	m_testView->setTitleColor(Color(0,0,0,255));
 	m_testView->setTitleTextColor(Color(255,255,255,255));
+	m_testView->setTitleFont(Font("Roboto Regular 16"));
+	m_testView->setTitleText("STM32");
 	m_testView->setWidth(FRAMEBUFFER_WIDTH);
 	m_testView->setHeight(FRAMEBUFFER_HEIGHT);
-	m_testView->setMainWidget(m_testLabel);
+	m_testView->setMainWidget(m_testLayout);
 
 	pushView(m_testView);
 }
@@ -79,7 +96,9 @@ GuiThread::GuiThread() :
 GuiThread::~GuiThread()
 {
 	delete m_testView;
-	delete m_testLabel;
+	delete m_testLabel1;
+	delete m_testLabel2;
+	delete m_testLayout;
 }
 
 void GuiThread::run()

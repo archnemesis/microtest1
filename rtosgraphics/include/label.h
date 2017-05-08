@@ -43,12 +43,6 @@
 class Label : public Widget
 {
 public:
-	enum TextAlignment {
-		TextAlignLeft,
-		TextAlignRight,
-		TextAlignCenter
-	};
-
 	Label();
 	Label(const char *labelText);
 
@@ -56,14 +50,22 @@ public:
 	void setText(const char *text);
 	void setFont(Font& font);
 	void setColor(const Color& color);
-	void setAlignment(TextAlignment align);
+	void setAlignment(Font::TextAlignment align);
 	void draw(Canvas& canvas);
+
+	int widthHint() const;
+	int heightHint() const;
+	bool hasHeightForWidth() const;
+	int heightForWidth(int width) const;
+	bool textWrapping() const;
+	void setTextWrapping(bool textWrapping);
 
 protected:
 	std::string m_text;
 	Font m_font;
 	Color m_color;
-	TextAlignment m_align;
+	Font::TextAlignment m_align;
+	bool m_textWrapping;
 };
 
 

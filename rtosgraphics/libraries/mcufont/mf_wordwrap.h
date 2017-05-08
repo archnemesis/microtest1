@@ -28,5 +28,17 @@ typedef bool (*mf_line_callback_t) (mf_str line, uint16_t count,
  */
 MF_EXTERN void mf_wordwrap(const struct mf_font_s *font, int16_t width,
                            mf_str text, mf_line_callback_t callback, void *state);
+
+/**
+ * Calculate the number of lines produced by a piece of text.
+ *
+ * font:  Font to use for metrics
+ * width: Maximum line width in pixels.
+ * text:  Pointer to the start of the text to process
+ *
+ * Returns: number of lines produced by wrapping the text.
+ */
+MF_EXTERN uint16_t mf_wordwrap_lines(const struct mf_font_s *font, int16_t width,
+        mf_str text);
               
 #endif

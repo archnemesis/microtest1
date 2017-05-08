@@ -57,6 +57,8 @@ void Font::setFont(const char *fontName)
 		// TODO: error handler called here
 	}
 	m_font = font;
+
+	//struct mf_font_s *scaled_font = mf_scale_font(m_font_scaled, m_font, )
 }
 
 void Font::setScaling(float scale)
@@ -64,7 +66,7 @@ void Font::setScaling(float scale)
 	m_scale = scale;
 }
 
-int Font::stringWidth(const char *string)
+int Font::stringWidth(const char *string) const
 {
 	int i;
 	int l = strlen(string);
@@ -77,7 +79,27 @@ int Font::stringWidth(const char *string)
 	return w;
 }
 
-int Font::stringHeight()
+int Font::stringHeight() const
 {
-	return m_font->height;
+	return (int)m_font->height;
+}
+
+Rect Font::boundingRect(int width, const char* text, TextAlignment alignment) const {
+	int lines = mf_wordwrap_lines(m_font, width, text);
+	int height = lines * m_font->height;
+
+	Rect ret(0, 0, width, height);
+	return ret;
+}
+
+Rect Font::boundingRect(int width, const std::string &text, TextAlignment alignment) const
+{
+	return boundingRect(width, text.c_str(), alignment);
+}
+
+int Font::stringWidth(const std::string& string) const {
+	return stringWidth(string.c_str());
+}
+
+Rect Font::boundingRect(const char* text) const {
 }

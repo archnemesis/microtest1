@@ -42,6 +42,7 @@
 #include "list.h"
 
 class Label;
+class VLayout;
 
 class GuiThread : public Thread
 {
@@ -59,7 +60,10 @@ private:
 
 	/* ---- Widgets ---- */
 	View	*m_testView;
-	Label	*m_testLabel;
+	VLayout	*m_testLayout;
+	Label	*m_testLabel1;
+	Label	*m_testLabel2;
+	Label	*m_testLabel3;
 };
 
 

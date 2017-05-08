@@ -37,13 +37,15 @@
 #include "heap.h"
 
 Label::Label() :
-		m_align(TextAlignLeft)
+		m_align(Font::TextAlignment::Left),
+		m_textWrapping(false)
 {
 
 }
 
 Label::Label(const char *labelText) :
-		m_align(TextAlignLeft),
+		m_align(Font::TextAlignment::Left),
+		m_textWrapping(false),
 		m_text(labelText)
 {
 
@@ -67,12 +69,12 @@ void Label::draw(Canvas& canvas)
 	int text_x = x();
 
 	switch (m_align) {
-	case TextAlignLeft:
+	case Font::TextAlignment::Left:
 		break;
-	case TextAlignRight:
+	case Font::TextAlignment::Right:
 		text_x = width() - text_width;
 		break;
-	case TextAlignCenter:
+	case Font::TextAlignment::Center:
 		text_x = (width() - text_width) / 2;
 		break;
 	}
@@ -92,7 +94,43 @@ void Label::setColor(const Color& color)
 	m_color = color;
 }
 
-void Label::setAlignment(TextAlignment align)
+void Label::setAlignment(Font::TextAlignment align)
 {
 	m_align = align;
+}
+
+bool Label::hasHeightForWidth() const {
+	return m_textWrapping;
+}
+
+int Label::heightForWidth(int width) const {
+	if (textWrapping()) {
+		//
+		// calculate preferred height based on width
+		//
+		Rect boundingRect = m_font.boundingRect(width, m_text, m_align);
+		return boundingRect.height();
+	}
+	else {
+		return m_font.stringHeight();
+	}
+}
+
+bool Label::textWrapping() const {
+	return m_textWrapping;
+}
+
+int Label::widthHint() const {
+	if (!m_textWrapping) {
+		return m_font.stringWidth(m_text);
+	}
+	return -1;
+}
+
+int Label::heightHint() const {
+	return m_font.stringHeight();
+}
+
+void Label::setTextWrapping(bool textWrapping) {
+	m_textWrapping = textWrapping;
 }

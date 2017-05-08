@@ -34,25 +34,43 @@
 #ifndef INCLUDE_FONT_H_
 #define INCLUDE_FONT_H_
 
+#include <string>
 #include "mcufont.h"
 #include "mf_font.h"
+#include "mf_scaledfont.h"
+#include "rect.h"
 
 class Canvas;
 
 class Font {
 	friend class Canvas;
 public:
+	enum class TextAlignment {
+		Left,
+		Right,
+		Center,
+		Justified
+	};
+
 	Font();
 	Font(const char *fontName);
 
 	void setFont(const char *fontName);
 	void setScaling(float scale);
-	int stringWidth(const char *string);
-	int stringHeight();
+	int stringWidth(const char *string) const;
+	int stringWidth(const std::string &string) const;
+	int stringHeight() const;
+
+	friend void mf_wordwrap_callback(mf_str line, uint16_t count, void *state);
+
+	Rect boundingRect(int width, const char *text, TextAlignment alignment) const;
+	Rect boundingRect(int width, const std::string &text, TextAlignment alignment) const;
+	Rect boundingRect(const char *text) const;
 
 protected:
 	char m_fontName[16];
 	const struct mf_font_s *m_font;
+	struct mf_scaledfont_s *m_font_scaled;
 	float m_scale;
 };
 

@@ -34,12 +34,12 @@
 #ifndef INCLUDE_WIDGET_H_
 #define INCLUDE_WIDGET_H_
 
+#include <sigslot.h>
 #include "canvas.h"
-#include "signal.h"
 
 class Widget {
 public:
-	enum SizePolicy {
+	enum class SizePolicy {
 		MinimumSizePolicy,
 		ExpandingSizePolicy,
 		FixedSizePolicy,
@@ -52,16 +52,27 @@ public:
 	void setX(int x);
 	void setY(int y);
 	void setWidth(int width);
+	void setMinWidth(int width);
+	void setMaxWidth(int width);
 	void setHeight(int height);
+	void setMinHeight(int height);
+	void setMaxHeight(int height);
 	void setVerticalSizePolicy(SizePolicy policy);
 	void setHorizontalSizePolicy(SizePolicy policy);
 
 	int x() const;
 	int y() const;
-	int width() const;
 	int height() const;
-	int widthHint() const;
-	int heightHint() const;
+	int width() const;
+
+	virtual int minHeight() const;
+	virtual int maxHeight() const;
+	virtual int minWidth() const;
+	virtual int maxWidth() const;
+	virtual int widthHint() const;
+	virtual int heightHint() const;
+	virtual int heightForWidth(int width) const;
+	virtual bool hasHeightForWidth() const;
 	SizePolicy horizontalSizePolicy() const;
 	SizePolicy verticalSizePolicy() const;
 
@@ -73,7 +84,11 @@ protected:
 	int m_x;
 	int m_y;
 	int m_width;
+	int m_minWidth;
+	int m_maxWidth;
 	int m_height;
+	int m_minHeight;
+	int m_maxHeight;
 	SizePolicy m_vSizePolicy;
 	SizePolicy m_hSizePolicy;
 };

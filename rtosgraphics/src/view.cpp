@@ -65,7 +65,7 @@ void View::draw(Canvas& canvas)
 
 	canvas.setColor(m_titleTextColor);
 	canvas.setFont(m_titleFont);
-	canvas.drawText(5, 2, "view");
+	canvas.drawText(5, 2, m_title);
 
 	if (m_mainWidget != 0) {
 		int mainWidget_width = width() - (marginLeft() + marginRight());
@@ -195,4 +195,8 @@ void View::setTitleFont(const Font& font)
 int View::exec()
 {
 
+}
+
+void View::setTitleText(const char* text) {
+	strcpy(&m_title[0], text);
 }

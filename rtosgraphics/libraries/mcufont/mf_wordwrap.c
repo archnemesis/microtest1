@@ -215,6 +215,61 @@ void mf_wordwrap(const struct mf_font_s *font, int16_t width,
         callback(current.start, current.chars, state);
 }
 
+uint16_t mf_wordwrap_lines(const struct mf_font_s *font, int16_t width,
+        mf_str text)
+{
+    struct linelen_s current = { 0 };
+    struct linelen_s previous = { 0 };
+    uint16_t lines = 0;
+    bool full;
+
+    current.start = text;
+
+    while (*text)
+    {
+        full = !append_word(font, width, &current, &text);
+
+        if (full || current.linebreak)
+        {
+            if (!current.chars)
+            {
+                /* We have a very long word. We must just cut it off at some
+                 * point. */
+                while (append_char(font, width, &current, &text));
+            }
+
+            if (previous.chars)
+            {
+                /* Tune the length and dispatch the previous line. */
+                if (!previous.linebreak && !current.linebreak)
+                    tune_lines(&current, &previous, width);
+
+                lines++;
+            }
+
+            previous = current;
+            current.start = text;
+            current.chars = 0;
+            current.width = 0;
+            current.linebreak = false;
+            current.last_word.word = 0;
+            current.last_word.space = 0;
+            current.last_word.chars = 0;
+        }
+    }
+
+    /* Dispatch the last lines. */
+    if (previous.chars)
+    {
+        lines++;
+    }
+
+    if (current.chars)
+        lines++;
+
+    return lines;
+}
+
 #else
 
 void mf_wordwrap(const struct mf_font_s *font, int16_t width,

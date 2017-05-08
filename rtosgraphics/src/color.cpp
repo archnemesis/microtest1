@@ -42,7 +42,7 @@ Color::Color() :
 	m_blue(0),
 	m_alpha(0)
 {
-	m_argb = (m_alpha << 24) | (m_blue << 16) | (m_green << 8) | m_red;
+	m_argb = (m_alpha << 24) | (m_red << 16) | (m_green << 8) | m_blue;
 }
 
 Color::Color(unsigned int red, unsigned int green, unsigned int blue, unsigned int alpha) {
@@ -50,7 +50,7 @@ Color::Color(unsigned int red, unsigned int green, unsigned int blue, unsigned i
 	m_green = green;
 	m_blue = blue;
 	m_alpha = alpha;
-	m_argb = (m_alpha << 24) | (m_blue << 16) | (m_green << 8) | m_red;
+	m_argb = (m_alpha << 24) | (m_red << 16) | (m_green << 8) | m_blue;
 }
 
 Color::Color(unsigned int color) {

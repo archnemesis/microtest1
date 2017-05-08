@@ -39,8 +39,12 @@ Widget::Widget() :
 		m_y(0),
 		m_width(0),
 		m_height(0),
-		m_vSizePolicy(ExpandingSizePolicy),
-		m_hSizePolicy(ExpandingSizePolicy)
+		m_minWidth(0),
+		m_maxWidth(0),
+		m_minHeight(0),
+		m_maxHeight(0),
+		m_vSizePolicy(SizePolicy::PreferredSizePolicy),
+		m_hSizePolicy(SizePolicy::PreferredSizePolicy)
 {
 
 }
@@ -48,6 +52,42 @@ Widget::Widget() :
 Widget::~Widget()
 {
 
+}
+
+Widget::SizePolicy Widget::horizontalSizePolicy() const {
+	return m_hSizePolicy;
+}
+
+Widget::SizePolicy Widget::verticalSizePolicy() const {
+	return m_vSizePolicy;
+}
+
+void Widget::setVerticalSizePolicy(Widget::SizePolicy policy)
+{
+	m_vSizePolicy = policy;
+}
+
+void Widget::setHorizontalSizePolicy(Widget::SizePolicy policy)
+{
+	m_hSizePolicy = policy;
+}
+
+void Widget::setMinWidth(int width) {
+}
+
+void Widget::setMaxWidth(int width) {
+}
+
+void Widget::setMinHeight(int height) {
+}
+
+void Widget::setMaxHeight(int height) {
+}
+
+int Widget::minHeight() const {
+}
+
+int Widget::minWidth() const {
 }
 
 void Widget::draw(Canvas &canvas)
@@ -103,4 +143,24 @@ int Widget::widthHint() const
 int Widget::heightHint() const
 {
 	return -1;
+}
+
+bool Widget::hasHeightForWidth() const
+{
+	return false;
+}
+
+int Widget::heightForWidth(int width) const
+{
+	return -1;
+}
+
+int Widget::maxHeight() const
+{
+	return INT16_MAX;
+}
+
+int Widget::maxWidth() const
+{
+	return INT16_MAX;
 }

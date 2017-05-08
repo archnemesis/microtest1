@@ -35,7 +35,7 @@
 #define INCLUDE_VLAYOUT_H_
 
 
-#include "list.h"
+#include <list>
 #include "widget.h"
 #include "canvas.h"
 
@@ -44,12 +44,62 @@ class VLayout : public Widget
 public:
 	VLayout();
 
-	void addWidget(Widget *widget);
+	void addWidget(Widget *widget, int stretch = 0);
+	void addStretch(int stretch = 0);
 	void removeWidget(Widget *widget);
 	void draw(Canvas& canvas);
 
+	int heightForWidth(int width) const;
+	bool hasHeightForWidth() const;
+
+	class LayoutItem
+	{
+		friend class VLayout;
+	public:
+		enum class LayoutItemType
+		{
+			Space,
+			Stretch,
+			Widget
+		};
+
+		LayoutItem(LayoutItemType type, Widget *item, int stretch) :
+			m_type(type),
+			m_stretch(stretch),
+			m_calculatedHeight(0),
+			m_cellHeight(0),
+			m_item(item) { }
+
+		LayoutItemType type() {
+			return m_type;
+		}
+
+		Widget *widget() {
+			return m_item;
+		}
+
+		int cellHeight() { return m_cellHeight; }
+		void setCellHeight(int height) { m_cellHeight = height; }
+		int stretch () { return m_stretch; }
+		void setPreferredHeight(int height) { m_calculatedHeight = height; }
+		int preferredHeight() { return m_calculatedHeight; }
+
+		friend bool compare_widget_size(LayoutItem *left, LayoutItem *right);
+		friend bool compare_widget_max_size(VLayout::LayoutItem *left, VLayout::LayoutItem *right);
+	protected:
+		LayoutItemType m_type;
+		int m_stretch;
+		int m_calculatedHeight;
+		int m_cellHeight;
+		Widget *m_item;
+	};
+
 protected:
-	List<Widget*> m_widgets;
+	void setupGeometry();
+	int m_geoCacheWidth;
+	int m_geoCacheHeight;
+
+	std::list<LayoutItem*> m_items;
 };
 
 
