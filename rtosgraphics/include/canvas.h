@@ -36,6 +36,9 @@
 
 #include <stdint.h>
 
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_dma2d.h"
+
 #include "color.h"
 #include "font.h"
 
@@ -47,7 +50,7 @@ public:
 
 	void setFramebufferAddress(uint32_t *framebuffer);
 	void clear();
-	void setColor(Color& color);
+	void setColor(const Color& color);
 	void setFont(Font& font);
 	void drawPixel(int x, int y);
 	void putPixel(int x, int y, uint32_t pixeldata);
@@ -65,6 +68,8 @@ public:
 	friend void _drawText_fontPixelCallback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *state);
 
 protected:
+	void initDMA2D();
+
 	volatile uint32_t *m_framebuffer;
 	int m_my_framebuffer;
 	int m_width;
@@ -74,6 +79,8 @@ protected:
 
 	int m_drawText_charX;
 	int m_drawText_charY;
+
+	DMA2D_HandleTypeDef m_dma2d;
 };
 
 

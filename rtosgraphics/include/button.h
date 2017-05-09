@@ -35,7 +35,41 @@
 #define INCLUDE_BUTTON_H_
 
 
+#include "widget.h"
+#include "color.h"
+#include "font.h"
+#include <string>
 
+class Button : public Widget
+{
+public:
+	Button();
+	~Button();
+
+	virtual void draw(Canvas &canvas);
+	void setText(const std::string &string);
+	std::string text() const;
+	const Color& backgroundColor() const;
+	void setBackgroundColor(const Color& backgroundColor);
+	const Color& borderColor() const;
+	void setBorderColor(const Color& borderColor);
+	int borderWidth() const;
+	void setBorderWidth(int borderWidth);bool pressed() const;
+	void setPressed(bool pressed = false);
+	const Color& textColor() const;
+	void setTextColor(const Color& textColor);
+	const Font& textFont() const;
+	void setTextFont(const Font& textFont);
+
+protected:
+	std::string m_text;
+	bool m_pressed = false;
+	Color m_textColor;
+	Color m_backgroundColor;
+	Color m_borderColor;
+	int m_borderWidth;
+	Font m_textFont;
+};
 
 
 #endif /* INCLUDE_BUTTON_H_ */

@@ -85,9 +85,11 @@ void Widget::setMaxHeight(int height) {
 }
 
 int Widget::minHeight() const {
+	return 0;
 }
 
 int Widget::minWidth() const {
+	return 0;
 }
 
 void Widget::draw(Canvas &canvas)
@@ -137,11 +139,18 @@ int Widget::height() const
 
 int Widget::widthHint() const
 {
+	if (m_minWidth > 0) {
+		return m_minWidth;
+	}
 	return -1;
 }
 
 int Widget::heightHint() const
 {
+	if (m_minHeight > 0) {
+		return m_minHeight;
+	}
+
 	return -1;
 }
 
