@@ -33,6 +33,7 @@
  */
 
 #include "canvas.h"
+#include "error.h"
 #include "heap.h"
 #include "mcufont.h"
 #include "mf_font.h"
@@ -53,6 +54,7 @@ Canvas::Canvas(int width, int height) :
 		m_drawText_charY(0)
 {
 	m_framebuffer = (uint32_t*)heap_malloc(m_width * m_height * 4);
+	initDMA2D();
 }
 
 Canvas::Canvas(uint32_t *framebuffer, int width, int height) :
@@ -65,7 +67,7 @@ Canvas::Canvas(uint32_t *framebuffer, int width, int height) :
 		m_drawText_charX(0),
 		m_drawText_charY(0)
 {
-
+	initDMA2D();
 }
 
 Canvas::~Canvas()
@@ -73,7 +75,12 @@ Canvas::~Canvas()
 
 }
 
-void Canvas::setColor(Color& color)
+void Canvas::initDMA2D()
+{
+	__HAL_RCC_DMA2D_CLK_ENABLE();
+}
+
+void Canvas::setColor(const Color& color)
 {
 	m_drawingColor = color;
 }
@@ -96,11 +103,45 @@ void Canvas::blit(Canvas& dest, int destX, int destY, int destWidth, int destHei
 
 void Canvas::clear()
 {
-	int i = 0;
-	uint32_t c = m_drawingColor.toInt();
-	for (; i < (m_width * m_height); i++) {
-		m_framebuffer[i] = c;
+//	int i = 0;
+//	uint32_t c = m_drawingColor.toInt();
+//	for (; i < (m_width * m_height); i++) {
+//		m_framebuffer[i] = c;
+//	}
+
+	m_dma2d.Init.Mode = DMA2D_R2M;
+	m_dma2d.Init.ColorMode = DMA2D_ARGB8888;
+	m_dma2d.Init.OutputOffset = 0;
+
+	m_dma2d.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
+	m_dma2d.LayerCfg[1].InputAlpha = 0xFF;
+	m_dma2d.LayerCfg[1].InputColorMode = CM_ARGB8888;
+	m_dma2d.LayerCfg[1].InputOffset = 0;
+
+	m_dma2d.Instance = DMA2D;
+
+	if (HAL_DMA2D_Init(&m_dma2d) != HAL_OK) {
+		return;
 	}
+
+	if (HAL_DMA2D_ConfigLayer(&m_dma2d, 1) != HAL_OK) {
+		return;
+	}
+
+	HAL_StatusTypeDef result;
+
+	result = HAL_DMA2D_Start(
+			&m_dma2d,
+			m_drawingColor.toInt(),
+			(uint32_t)m_framebuffer,
+			m_width,
+			m_height);
+
+	while (HAL_DMA2D_PollForTransfer(&m_dma2d, 100) != HAL_OK) {
+
+	}
+
+	HAL_DMA2D_DeInit(&m_dma2d);
 }
 
 void Canvas::drawPixel(int x, int y)
@@ -259,12 +300,47 @@ void Canvas::drawRect(int x, int y, int width, int height)
 
 void Canvas::drawFilledRect(int x, int y, int width, int height)
 {
-	int x1;
-	int y1;
+//	int x1;
+//	int y1;
 
-	for (x1 = x; x1 < (x + width); x1++) {
-		for (y1 = y; y1 < (y + height); y1++) {
-			drawPixel(x1, y1);
-		}
+	m_dma2d.Init.Mode = DMA2D_R2M;
+	m_dma2d.Init.ColorMode = DMA2D_ARGB8888;
+	m_dma2d.Init.OutputOffset = m_width - width;
+
+	m_dma2d.LayerCfg[1].AlphaMode = DMA2D_NO_MODIF_ALPHA;
+	m_dma2d.LayerCfg[1].InputAlpha = 0;
+	m_dma2d.LayerCfg[1].InputColorMode = CM_ARGB8888;
+	m_dma2d.LayerCfg[1].InputOffset = 0;
+
+	m_dma2d.Instance = DMA2D;
+
+	if (HAL_DMA2D_Init(&m_dma2d) != HAL_OK) {
+		return;
 	}
+
+	if (HAL_DMA2D_ConfigLayer(&m_dma2d, 1) != HAL_OK) {
+		return;
+	}
+
+	HAL_StatusTypeDef result;
+	uint32_t dest = ((uint32_t)m_framebuffer) + (((m_width * y) + x) * 4);
+
+	result = HAL_DMA2D_Start(
+			&m_dma2d,
+			m_drawingColor.toInt(),
+			dest,
+			width,
+			height);
+
+	while (HAL_DMA2D_PollForTransfer(&m_dma2d, 100) != HAL_OK) {
+
+	}
+
+	HAL_DMA2D_DeInit(&m_dma2d);
+
+//	for (x1 = x; x1 < (x + width); x1++) {
+//		for (y1 = y; y1 < (y + height); y1++) {
+//			drawPixel(x1, y1);
+//		}
+//	}
 }

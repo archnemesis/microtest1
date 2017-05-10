@@ -41,6 +41,7 @@
 #include "hardware_ltdc.h"
 #include "thread_gui.h"
 #include "label.h"
+#include "button.h"
 #include "view.h"
 #include "vlayout.h"
 #include "canvas.h"
@@ -75,10 +76,14 @@ GuiThread::GuiThread() :
 	m_testLabel3->setText("Blue Label");
 	m_testLabel3->setColor(Color(0,0,255,255));
 
+	m_testButton1 = new Button();
+	m_testButton1->setText("Test Button");
+
 	m_testLayout = new VLayout();
 	m_testLayout->addWidget(m_testLabel1);
 	m_testLayout->addWidget(m_testLabel2);
 	m_testLayout->addWidget(m_testLabel3);
+	m_testLayout->addWidget(m_testButton1);
 
 	m_testView = new View();
 	m_testView->setBackgroundColor(Color(255,255,255,255));
@@ -141,6 +146,8 @@ void GuiThread::run()
 		// at the next sync
 		//
 		mutex_unlock(&m_refreshMutex);
+
+		sleep(5);
 	}
 }
 

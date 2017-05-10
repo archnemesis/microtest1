@@ -41,6 +41,7 @@
 #include "view.h"
 #include "list.h"
 
+class Button;
 class Label;
 class VLayout;
 
@@ -64,6 +65,7 @@ private:
 	Label	*m_testLabel1;
 	Label	*m_testLabel2;
 	Label	*m_testLabel3;
+	Button	*m_testButton1;
 };
 
 
