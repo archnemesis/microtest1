@@ -40,6 +40,7 @@
 #include "canvas.h"
 #include "color.h"
 #include "font.h"
+#include "inputevent.h"
 
 class View : public Widget {
 public:
@@ -74,6 +75,8 @@ public:
 	void setTitleTextColor(const Color& titleTextColor);
 	void setTitleFont(const Font& font);
 	void setTitleText(const char *text);
+
+	void processInputEvent(InputEvent *event);
 
 	Signal0<void> activated;
 	Signal0<void> deactivated;

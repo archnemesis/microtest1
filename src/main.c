@@ -22,6 +22,8 @@
 #include "hardware_spi.h"
 #include "hardware_ltdc.h"
 #include "hardware_ili9341.h"
+#include "hardware_i2c.h"
+#include "hardware_stmpe811.h"
 
 #include "micrortos.h"
 #include "thread.h"
@@ -43,6 +45,10 @@ main(int argc, char* argv[])
 	HW_SPI_Init();
 	HW_LTDC_Init();
 	HW_ILI9341_Init();
+	HW_I2C_Init();
+
+	HAL_Delay(100);
+	HW_STMPE811_Init();
 
 	application_init();
 	thread_start_scheduler();

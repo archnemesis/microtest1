@@ -39,19 +39,29 @@
 #include "stm32f4xx_hal_gpio.h"
 #include "stm32f4xx_hal_dma2d.h"
 #include "hardware_ltdc.h"
+#include "hardware_stmpe811.h"
 
+#include "ringbuffer.h"
 #include "thread_gui.h"
+#include "thread_input.h"
 
 GuiThread guiThread;
+InputThread inputThread(&guiThread);
 
 void application_init()
 {
 	guiThread.start();
+	inputThread.start();
 }
 
 extern "C" void EXTI15_10_IRQHandler(void)
 {
-	guiThread.takeRefreshMutex();
+	if ((EXTI->PR & EXTI_PR_PR11) == EXTI_PR_PR11) {
+		guiThread.takeRefreshMutex();
+		EXTI->PR |= EXTI_PR_PR11;
+	}
 
-	EXTI->PR |= EXTI_PR_PR11;
+	if ((EXTI->PR & EXTI_PR_PR15) == EXTI_PR_PR15) {
+		EXTI->PR |= EXTI_PR_PR15;
+	}
 }

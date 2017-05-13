@@ -36,7 +36,12 @@
 
 VLayout::VLayout() :
 	m_geoCacheWidth(0),
-	m_geoCacheHeight(0)
+	m_geoCacheHeight(0),
+	m_marginTop(0),
+	m_marginBottom(0),
+	m_marginLeft(0),
+	m_marginRight(0),
+	m_spacing(0)
 {
 
 }
@@ -59,12 +64,33 @@ void VLayout::removeWidget(Widget *widget)
 	}
 }
 
+void VLayout::processInputEvent(InputEvent *event)
+{
+	std::list<LayoutItem*>::const_iterator iter;
+	for (iter = m_items.begin(); iter != m_items.end(); ++iter) {
+		LayoutItem *item = *iter;
+		if (item->type() == LayoutItem::LayoutItemType::Widget) {
+			int widget_x1 = item->widget()->x();
+			int widget_x2 = item->widget()->width() + widget_x1;
+			int widget_y1 = item->widget()->y();
+			int widget_y2 = item->widget()->height() + widget_y1;
+
+			if (widget_x1 <= event->x() && event->x() <= widget_x2) {
+				if (widget_y1 <= event->y() && event->y() <= widget_y2) {
+					item->widget()->processInputEvent(event);
+					return;
+				}
+			}
+		}
+	}
+}
+
 void VLayout::draw(Canvas& canvas)
 {
 	setupGeometry();
 
-	int x = this->x();
-	int y = this->y();
+	unsigned int x = this->x() + m_marginLeft;
+	unsigned int y = this->y() + m_marginTop;
 	std::list<LayoutItem*>::const_iterator iter;
 	for (iter = m_items.begin(); iter != m_items.end(); ++iter) {
 		LayoutItem *item = *iter;
@@ -84,14 +110,14 @@ void VLayout::draw(Canvas& canvas)
 				}
 
 				if (widget_width < width()) {
-					item->widget()->setX(x + ((width() - widget_width) / 2));
+					item->widget()->setX(x + (((width() - m_marginLeft - m_marginRight) - widget_width) / 2));
 				}
 				else {
 					item->widget()->setX(x);
 				}
 
 				item->widget()->draw(canvas);
-				y += cell_height;
+				y += cell_height + m_spacing;
 			}
 		}
 	}
@@ -125,8 +151,9 @@ void VLayout::setupGeometry()
 	m_geoCacheWidth = width();
 	m_geoCacheHeight = height();
 
+	int contents_height = height() - m_marginTop - m_marginBottom - ((m_items.size() - 1) * m_spacing);
+	int contents_width = width() - m_marginLeft - m_marginRight;
 	int min_height = 0;
-	int widgets = m_items.size();
 	int widgets_expanding = 0;
 	int widgets_expanding_max_height = 0;	// total max height
 	int widgets_preferred = 0;
@@ -219,7 +246,7 @@ void VLayout::setupGeometry()
 	// - don't strink widgets, allow them to be pushed off-screen
 	// - something else???
 	//
-	if (min_height > height()) {
+	if (min_height > contents_height) {
 		// TODO: re-adjust sizing
 	}
 
@@ -227,7 +254,7 @@ void VLayout::setupGeometry()
 	// area into which expanding widgets are divided, according to
 	// stretch factor
 	//
-	int expanding_area = height() - widgets_preferred_height - widgets_fixed_height;
+	int expanding_area = contents_height - widgets_preferred_height - widgets_fixed_height;
 	int expanding_area_remaining = expanding_area;
 
 	//
@@ -339,11 +366,11 @@ void VLayout::setupGeometry()
 				case Widget::SizePolicy::ExpandingSizePolicy:
 				case Widget::SizePolicy::PreferredSizePolicy:
 				{
-					if (item->widget()->maxWidth() < width()) {
+					if (item->widget()->maxWidth() < contents_width) {
 						item->widget()->setWidth(item->widget()->maxWidth());
 					}
 					else {
-						item->widget()->setWidth(width());
+						item->widget()->setWidth(contents_width);
 					}
 					break;
 				}
@@ -354,8 +381,8 @@ void VLayout::setupGeometry()
 				}
 				case Widget::SizePolicy::MinimumSizePolicy:
 				{
-					if (item->widget()->widthHint() > width()) {
-						item->widget()->setWidth(width());
+					if (item->widget()->widthHint() > contents_width) {
+						item->widget()->setWidth(contents_width);
 					}
 					else {
 						item->widget()->setWidth(item->widget()->widthHint());
@@ -404,4 +431,44 @@ int VLayout::heightForWidth(int width) const
 	}
 
 	return height;
+}
+
+int VLayout::marginBottom() const {
+	return m_marginBottom;
+}
+
+void VLayout::setMarginBottom(int marginBottom) {
+	m_marginBottom = marginBottom;
+}
+
+int VLayout::marginLeft() const {
+	return m_marginLeft;
+}
+
+void VLayout::setMarginLeft(int marginLeft) {
+	m_marginLeft = marginLeft;
+}
+
+int VLayout::marginRight() const {
+	return m_marginRight;
+}
+
+void VLayout::setMarginRight(int marginRight) {
+	m_marginRight = marginRight;
+}
+
+int VLayout::marginTop() const {
+	return m_marginTop;
+}
+
+void VLayout::setMarginTop(int marginTop) {
+	m_marginTop = marginTop;
+}
+
+int VLayout::spacing() const {
+	return m_spacing;
+}
+
+void VLayout::setSpacing(int spacing) {
+	m_spacing = spacing;
 }

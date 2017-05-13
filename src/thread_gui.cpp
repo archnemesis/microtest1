@@ -46,6 +46,7 @@
 #include "vlayout.h"
 #include "canvas.h"
 #include "list.h"
+#include "inputevent.h"
 
 uint32_t _framebuffer_1[FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT] __attribute__ ((section (".sram_data")));
 uint32_t _framebuffer_2[FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT] __attribute__ ((section (".sram_data")));
@@ -57,20 +58,21 @@ GuiThread::GuiThread() :
 {
 	m_canvas.setFramebufferAddress((uint32_t *)&_framebuffer_2[0]);
 
-	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 3, 0);
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 7, 0);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 	mutex_init(&m_refreshMutex);
+	mutex_init(&m_inputEventMutex);
 	framebuffer = (uint32_t *)&_framebuffer_1[0];
 
 	m_testLabel1 = new Label();
 	m_testLabel1->setText("Red Label");
 	m_testLabel1->setColor(Color(255,0,0,255));
+	m_testLabel1->setVerticalSizePolicy(Widget::SizePolicy::ExpandingSizePolicy);
 
 	m_testLabel2 = new Label();
 	m_testLabel2->setText("Green Label");
 	m_testLabel2->setColor(Color(0,255,0,255));
-	m_testLabel2->setVerticalSizePolicy(Widget::SizePolicy::ExpandingSizePolicy);
 
 	m_testLabel3 = new Label();
 	m_testLabel3->setText("Blue Label");
@@ -79,10 +81,17 @@ GuiThread::GuiThread() :
 	m_testButton1 = new Button();
 	m_testButton1->setText("Test Button");
 
+	m_testButton2 = new Button();
+	m_testButton2->setText("Another Button!");
+
 	m_testLayout = new VLayout();
+	m_testLayout->setMarginLeft(5);
+	m_testLayout->setMarginRight(5);
+	m_testLayout->setMarginTop(5);
+	m_testLayout->setMarginBottom(5);
+	m_testLayout->setSpacing(5);
 	m_testLayout->addWidget(m_testLabel1);
-	m_testLayout->addWidget(m_testLabel2);
-	m_testLayout->addWidget(m_testLabel3);
+	m_testLayout->addWidget(m_testButton2);
 	m_testLayout->addWidget(m_testButton1);
 
 	m_testView = new View();
@@ -94,6 +103,8 @@ GuiThread::GuiThread() :
 	m_testView->setWidth(FRAMEBUFFER_WIDTH);
 	m_testView->setHeight(FRAMEBUFFER_HEIGHT);
 	m_testView->setMainWidget(m_testLayout);
+
+	m_testButton1->clicked.Connect(this, &GuiThread::buttonClicked);
 
 	pushView(m_testView);
 }
@@ -108,14 +119,16 @@ GuiThread::~GuiThread()
 
 void GuiThread::run()
 {
-	View *activeView = 0;
+	View *activeView = nullptr;
+	Widget *eventClaimedBy = nullptr;
+	static GPIO_PinState i = GPIO_PIN_RESET;
 
 	while (1) {
 		if (m_viewStack.at(0) != activeView) {
 			//
 			// make a transition
 			//
-			if (activeView != 0) {
+			if (activeView != nullptr) {
 				activeView->deactivated();
 			}
 
@@ -123,7 +136,43 @@ void GuiThread::run()
 			activeView->activated();
 		}
 
-		if (activeView == 0) continue;
+		if (activeView == nullptr) continue;
+
+		//
+		// check for input events
+		//
+		while (m_inputEventQueue.size() > 0) {
+			HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, i);
+			i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
+			if (mutex_lock_nonblocking(&m_inputEventMutex) == E_OK) {
+				InputEvent *event = m_inputEventQueue.front();
+				m_inputEventQueue.pop();
+				mutex_unlock(&m_inputEventMutex);
+
+				char buf[255];
+				sprintf(buf, "X: %d, Y: %d", event->x(), event->y());
+				m_testLabel1->setText(buf);
+
+				if (event->type() != InputEvent::EventType::TouchDown) {
+					if (eventClaimedBy != nullptr) {
+						eventClaimedBy->processInputEvent(event);
+					}
+					else {
+						activeView->processInputEvent(event);
+					}
+				}
+				else {
+					eventClaimedBy = nullptr;
+					activeView->processInputEvent(event);
+				}
+
+				if (event->claimedBy() != nullptr) {
+					eventClaimedBy = event->claimedBy();
+				}
+
+				delete event;
+			}
+		}
 
 		//
 		// draw the active view
@@ -167,11 +216,67 @@ bool GuiThread::takeRefreshMutex() {
 	if (mutex_lock_nonblocking(&m_refreshMutex) == E_OK) {
 		HW_LTDC_SetFramebuffer(framebuffer);
 
-		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, i);
-		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
+//		HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, i);
+//		i = (i == GPIO_PIN_RESET ? GPIO_PIN_SET : GPIO_PIN_RESET);
 		return true;
 	}
 	return false;
+}
+
+void GuiThread::registerTouchEvent(int x, int y, bool state) {
+	//
+	// 0,0 - 3750,300
+	// 240,320 - 300,3785
+	//
+	int x_min = 3750;
+	int x_max = 300;
+	int y_min = 300;
+	int y_max = 3785;
+	InputEvent *event = nullptr;
+	static bool last_state = false;
+	static int last_x = 0;
+	static int last_y = 0;
+
+	int x_adj = (x - x_min) * m_canvas.width() / (x_max - x_min);
+	int y_adj = (y - y_min) * m_canvas.height() / (y_max - y_min);
+
+	if (last_state != state) {
+		if (state) {
+			event = new InputEvent(
+					InputEvent::EventType::TouchDown,
+					x_adj,
+					y_adj);
+
+			last_x = x_adj;
+			last_y = y_adj;
+		}
+		else {
+			event = new InputEvent(
+					InputEvent::EventType::TouchUp,
+					last_x,
+					last_y);
+		}
+		last_state = state;
+		mutex_lock_wait(&m_inputEventMutex, 0);
+		m_inputEventQueue.push(event);
+		mutex_unlock(&m_inputEventMutex);
+	}
+	else if (state == true) {
+		event = new InputEvent(
+				InputEvent::EventType::Drag,
+				x_adj,
+				y_adj);
+
+		last_x = x_adj;
+		last_y = y_adj;
+		mutex_lock_wait(&m_inputEventMutex, 0);
+		m_inputEventQueue.push(event);
+		mutex_unlock(&m_inputEventMutex);
+	}
+}
+
+void GuiThread::buttonClicked() {
+	m_testLabel2->setText("Clicked!");
 }
 
 #endif /* THREAD_GUI_CPP_ */

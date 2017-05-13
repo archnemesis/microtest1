@@ -38,6 +38,7 @@
 #include <list>
 #include "widget.h"
 #include "canvas.h"
+#include "inputevent.h"
 
 class VLayout : public Widget
 {
@@ -51,6 +52,17 @@ public:
 
 	int heightForWidth(int width) const;
 	bool hasHeightForWidth() const;
+	void processInputEvent(InputEvent *event);
+	int marginBottom() const;
+	void setMarginBottom(int marginBottom = 0);
+	int marginLeft() const;
+	void setMarginLeft(int marginLeft = 0);
+	int marginRight() const;
+	void setMarginRight(int marginRight = 0);
+	int marginTop() const;
+	void setMarginTop(int marginTop = 0);
+	int spacing() const;
+	void setSpacing(int spacing = 0);
 
 	class LayoutItem
 	{
@@ -86,6 +98,7 @@ public:
 
 		friend bool compare_widget_size(LayoutItem *left, LayoutItem *right);
 		friend bool compare_widget_max_size(VLayout::LayoutItem *left, VLayout::LayoutItem *right);
+
 	protected:
 		LayoutItemType m_type;
 		int m_stretch;
@@ -98,6 +111,11 @@ protected:
 	void setupGeometry();
 	int m_geoCacheWidth;
 	int m_geoCacheHeight;
+	int m_spacing;
+	int m_marginTop;
+	int m_marginBottom;
+	int m_marginLeft;
+	int m_marginRight;
 
 	std::list<LayoutItem*> m_items;
 };

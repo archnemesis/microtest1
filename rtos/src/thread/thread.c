@@ -87,7 +87,7 @@ void PendSV_Handler()
 			" STR		R0, [R2]					\n\t"	// Update the current task stack pointer
 			" STMDB		SP!, {R14}					\n\t"	// Save our EXC_RETURN value
 			" 										\n\t"
-			" MOV 		R0, #5						\n\t"	// Block lower-priority interrupts
+			" MOV 		R0, #10						\n\t"	// Block lower-priority interrupts
 			" CPSID		I							\n\t"	// Errata Workaround
 			" MSR		BASEPRI, R0					\n\t"
 			" 										\n\t"

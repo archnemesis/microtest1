@@ -10,6 +10,7 @@
 Button::Button() :
 	Widget(),
 	m_backgroundColor(Color(0xFF666666)),
+	m_backgroundColorPressed(Color(0xFF333333)),
 	m_textColor(Color(0xFF000000)),
 	m_borderColor(Color(0xFF333333)),
 	m_borderWidth(1),
@@ -28,7 +29,13 @@ void Button::draw(Canvas &canvas)
 	int x1 = x();
 	int y1 = y();
 
-	canvas.setColor(m_backgroundColor);
+	if (m_pressed) {
+		canvas.setColor(m_backgroundColorPressed);
+	}
+	else {
+		canvas.setColor(m_backgroundColor);
+	}
+
 	canvas.drawFilledRect(x1, y1, width(), height());
 
 	int text_width = m_textFont.stringWidth(m_text);
@@ -37,6 +44,11 @@ void Button::draw(Canvas &canvas)
 
 	canvas.setColor(m_textColor);
 	canvas.drawText(text_x, text_y, m_text.c_str());
+}
+
+int Button::heightHint() const
+{
+	return m_textFont.stringHeight() + 10;
 }
 
 void Button::setText(const std::string &string)
@@ -95,4 +107,15 @@ const Font& Button::textFont() const {
 
 void Button::setTextFont(const Font& textFont) {
 	m_textFont = textFont;
+}
+
+void Button::processInputEvent(InputEvent *event)
+{
+	if (event->type() == InputEvent::EventType::TouchDown) {
+		event->claim(this);
+		m_pressed = true;
+	}
+	else if (event->type() == InputEvent::EventType::TouchUp) {
+		m_pressed = false;
+	}
 }

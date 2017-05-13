@@ -33,6 +33,7 @@
  */
 
 #include "widget.h"
+#include "inputevent.h"
 
 Widget::Widget() :
 		m_x(0),
@@ -172,4 +173,9 @@ int Widget::maxHeight() const
 int Widget::maxWidth() const
 {
 	return INT16_MAX;
+}
+
+void Widget::processInputEvent(InputEvent *event)
+{
+	clicked();
 }

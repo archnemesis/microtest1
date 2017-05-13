@@ -43,7 +43,6 @@ static SPI_HandleTypeDef hspi5;
 void HW_SPI_Init()
 {
 	__HAL_RCC_GPIOF_CLK_ENABLE();
-	__HAL_RCC_SPI5_CLK_ENABLE();
 
 	/**
 	 * SPI5 GPIO Configuration
@@ -60,6 +59,8 @@ void HW_SPI_Init()
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	GPIO_InitStruct.Alternate = GPIO_AF5_SPI5;
 	HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
+
+	__HAL_RCC_SPI5_CLK_ENABLE();
 
 	hspi5.Instance = SPI5;
 	hspi5.Init.Mode = SPI_MODE_MASTER;

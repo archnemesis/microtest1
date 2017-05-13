@@ -37,6 +37,8 @@
 #include <sigslot.h>
 #include "canvas.h"
 
+class InputEvent;
+
 class Widget {
 public:
 	enum class SizePolicy {
@@ -77,6 +79,7 @@ public:
 	SizePolicy verticalSizePolicy() const;
 
 	virtual void draw(Canvas& canvas);
+	virtual void processInputEvent(InputEvent *event);
 
 	Signal0<void> clicked;
 

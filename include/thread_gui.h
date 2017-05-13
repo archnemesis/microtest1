@@ -34,7 +34,7 @@
 #ifndef INCLUDE_THREAD_GUI_H_
 #define INCLUDE_THREAD_GUI_H_
 
-
+#include <queue>
 #include "thread.h"
 #include "mutex.h"
 #include "canvas.h"
@@ -44,6 +44,7 @@
 class Button;
 class Label;
 class VLayout;
+class InputEvent;
 
 class GuiThread : public Thread
 {
@@ -54,9 +55,14 @@ public:
 	bool takeRefreshMutex();
 	void pushView(View *view);
 	void popView();
+	void registerTouchEvent(int x, int y, bool state);
+	void buttonClicked();
 private:
+	std::queue<InputEvent*> m_inputEventQueue;
 	Canvas m_canvas;
 	struct mutex_t m_refreshMutex;
+	struct mutex_t m_inputEventMutex;
+
 	List<View*> m_viewStack;
 
 	/* ---- Widgets ---- */
@@ -66,6 +72,7 @@ private:
 	Label	*m_testLabel2;
 	Label	*m_testLabel3;
 	Button	*m_testButton1;
+	Button	*m_testButton2;
 };
 
 

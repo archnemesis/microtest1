@@ -200,3 +200,10 @@ int View::exec()
 void View::setTitleText(const char* text) {
 	strcpy(&m_title[0], text);
 }
+
+void View::processInputEvent(InputEvent *event)
+{
+	if (m_mainWidget != nullptr) {
+		m_mainWidget->processInputEvent(event);
+	}
+}

@@ -38,6 +38,7 @@
 #include "widget.h"
 #include "color.h"
 #include "font.h"
+#include "inputevent.h"
 #include <string>
 
 class Button : public Widget
@@ -47,6 +48,7 @@ public:
 	~Button();
 
 	virtual void draw(Canvas &canvas);
+	int heightHint() const;
 	void setText(const std::string &string);
 	std::string text() const;
 	const Color& backgroundColor() const;
@@ -60,12 +62,14 @@ public:
 	void setTextColor(const Color& textColor);
 	const Font& textFont() const;
 	void setTextFont(const Font& textFont);
+	void processInputEvent(InputEvent *event);
 
 protected:
 	std::string m_text;
 	bool m_pressed = false;
 	Color m_textColor;
 	Color m_backgroundColor;
+	Color m_backgroundColorPressed;
 	Color m_borderColor;
 	int m_borderWidth;
 	Font m_textFont;
